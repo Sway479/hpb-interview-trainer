@@ -1,0 +1,4 @@
+# Shell entry points must remain executable by Bash after Windows Git checkouts.
+*.sh text eol=lf
+apps/mobile/android/gradlew text eol=lf
+*.py text eol=lf

@@ -1,0 +1,12 @@
+:root {
+  --ion-font-family: Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  --ion-background-color: #f7f7f2;
+  --ion-text-color: #132f47;
+  --ion-color-primary: #168f85;
+  --ion-color-primary-rgb: 22,143,133;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #137e75;
+  --ion-color-primary-tint: #2d9a91;
+  color-scheme: light;
+}
+

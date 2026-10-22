@@ -1,0 +1,44 @@
+{
+  "name": "hpb-voice-prototype",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Android voice simulated-patient training prototype",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"tsx watch server/index.ts\" \"npm run dev -w @hpb/mobile\"",
+    "start": "tsx server/index.ts",
+    "build": "npm run build -w @hpb/mobile",
+    "typecheck": "tsc --noEmit && npm run typecheck -w @hpb/mobile",
+    "test": "node --import tsx --test test/*.test.ts",
+    "mcp": "tsx server/mcp.ts",
+    "probe:qwen": "node scripts/probe-qwen.mjs",
+    "android:sync": "npm run build && npm run android:sync -w @hpb/mobile"
+  },
+  "keywords": [],
+  "author": "Sway479 and contributors",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@fastify/cors": "11.3.1",
+    "@fastify/static": "10.1.6",
+    "@fastify/websocket": "11.3.4",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "dotenv": "17.4.2",
+    "fastify": "5.12.7",
+    "ws": "8.22.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/ws": "8.18.2",
+    "concurrently": "10.0.6",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sway479/hpb-interview-trainer.git"
+  }
+}
