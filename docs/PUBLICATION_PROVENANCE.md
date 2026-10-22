@@ -10,7 +10,8 @@ commit history. The public repository contains software source and selected
 fictional emulator screenshots, not the complete private migration archive.
 
 Publication changes are limited to licensing/package license metadata, ignore
-rules, public documentation, removal of workstation-specific prose and omitted
+rules, a newly authored configuration example with empty credentials, public
+documentation, removal of workstation-specific prose and omitted
 private/optional materials. Application, native bridge, domain, test source and
 build implementation are unchanged from the revision above. Dependency versions
 and integrity values are unchanged. New screenshots show the existing APK,

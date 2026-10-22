@@ -26,7 +26,7 @@
 
 ## 安装与使用
 
-预发布 APK 将列在 [Releases](https://github.com/Sway479/hpb-interview-trainer/releases)。它是 debug 调试包，包名 `edu.hpb.interview`，App 内版本 `0.2.0`；不代表生产安全或真实手机声学验收通过。安装包不带 API Key，需要自行配置服务商账号。
+预发布 APK 下载见 [Releases](https://github.com/Sway479/hpb-interview-trainer/releases)。它是 debug 调试包，包名 `edu.hpb.interview`，App 内版本 `0.2.0`；不代表生产安全或真实手机声学验收通过。安装包不带 API Key，需要自行配置服务商账号。
 
 1. 打开底部 **API**，添加配置并输入对应服务商 Key。
 2. 分别选择病例与评价模型、实时语音模型；也可仅使用文字问诊。
