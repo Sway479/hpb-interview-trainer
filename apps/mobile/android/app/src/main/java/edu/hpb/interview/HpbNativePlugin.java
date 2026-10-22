@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.SystemClock;
+import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -50,6 +51,7 @@ public class HpbNativePlugin extends Plugin {
     private HpbCredentialStore credentials;
     private HpbPrivateStore files;
     private OkHttpClient client;
+    private OnBackPressedCallback backButtonCallback;
 
     @Override public void load() {
         credentials = new HpbCredentialStore(getContext());
@@ -58,6 +60,68 @@ public class HpbNativePlugin extends Plugin {
             .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
             .connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS).pingInterval(PING_INTERVAL_MS, TimeUnit.MILLISECONDS).build();
+        // AndroidX also routes modern system/predictive-back commits through this callback.
+        // The callback remains disabled until the WebView has a live listener.
+        getActivity().runOnUiThread(() -> {
+            if (destroyed.get()) return;
+            backButtonCallback = new OnBackPressedCallback(false) {
+                @Override public void handleOnBackPressed() {
+                    execute(() -> {
+                        if (!destroyed.get() && hasListeners("backButton")) notifyListeners("backButton", new JSObject());
+                        else dispatchDefaultBack();
+                    });
+                }
+            };
+            getActivity().getOnBackPressedDispatcher().addCallback(getActivity(), backButtonCallback);
+            updateBackButtonCallback();
+        });
+    }
+
+    private void updateBackButtonCallback() {
+        boolean enabled = !destroyed.get() && hasListeners("backButton");
+        getActivity().runOnUiThread(() -> {
+            if (backButtonCallback != null) backButtonCallback.setEnabled(!destroyed.get() && enabled);
+        });
+    }
+
+    private void dispatchDefaultBack() {
+        getActivity().runOnUiThread(() -> {
+            if (destroyed.get()) return;
+            if (backButtonCallback != null) backButtonCallback.setEnabled(false);
+            getActivity().getOnBackPressedDispatcher().onBackPressed();
+            updateBackButtonCallback();
+        });
+    }
+
+    @Override @PluginMethod(returnType = PluginMethod.RETURN_NONE)
+    public void addListener(PluginCall call) {
+        super.addListener(call);
+        updateBackButtonCallback();
+    }
+
+    @Override @PluginMethod(returnType = PluginMethod.RETURN_NONE)
+    public void removeListener(PluginCall call) {
+        super.removeListener(call);
+        updateBackButtonCallback();
+    }
+
+    @Override @PluginMethod
+    public void removeAllListeners(PluginCall call) {
+        super.removeAllListeners(call);
+        updateBackButtonCallback();
+    }
+
+    @Override public void removeAllListeners() {
+        super.removeAllListeners();
+        updateBackButtonCallback();
+    }
+
+    @PluginMethod public void minimizeApp(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (destroyed.get()) { call.reject("原生服务已关闭。", "NATIVE_CLOSED"); return; }
+            getActivity().moveTaskToBack(true);
+            call.resolve();
+        });
     }
 
     @FunctionalInterface private interface Work { void run() throws Exception; }
@@ -308,6 +372,9 @@ public class HpbNativePlugin extends Plugin {
 
     @Override protected void handleOnDestroy() {
         destroyed.set(true);
+        getActivity().runOnUiThread(() -> {
+            if (backButtonCallback != null) { backButtonCallback.remove(); backButtonCallback = null; }
+        });
         for (Call request : requests.keySet()) request.cancel();
         requests.clear();
         for (SocketState state : sockets.values()) cancelSocket(state, 1000, "");

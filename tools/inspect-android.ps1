@@ -31,7 +31,7 @@ try {
         $noticeNames = @($archive.Entries | Where-Object FullName -like 'assets/third-party-notices/*.LICENSE' | ForEach-Object FullName)
     } finally { $archive.Dispose() }
     $checks = [ordered]@{
-        packageAndVersion = $badging -match "name='edu.hpb.interview' versionCode='2' versionName='0.2.0'"
+        packageAndVersion = $badging -match "name='edu.hpb.interview' versionCode='3' versionName='0.2.1'"
         minSdk24 = $badging -match "minSdkVersion:'24'"
         targetSdk36 = $badging -match "targetSdkVersion:'36'"
         internetPermission = $badging -match "uses-permission: name='android.permission.INTERNET'"

@@ -11,6 +11,9 @@ import {
 import { api, errorMessage, readSettings, saveSettings, type CasePreview, type LearnerSummary, type Session } from './api';
 import type { ConnectionSettings, CredentialStatuses, ExportResult, Participant, ResearchSelection, Study } from './platform/contracts';
 import { DEFAULT_RESEARCH_SELECTION } from './platform/contracts';
+import { loadResearchSelection, saveResearchSelection, validateResearchSelection } from './platform/research-selection';
+import { listenForAndroidBackButton } from './platform/android-back';
+import { HpbNative } from './platform/native-bridge';
 import { ProviderSettings } from './ProviderSettings';
 import { ResearchContextCard, ResearchPanel, ResearchSnapshotCard, type StudyInput, type ParticipantInput } from './ResearchPanel';
 import { initialVoiceState, VoiceConnection, type VoiceState } from './audio';
@@ -33,7 +36,11 @@ function App() {
   const [credentials, setCredentials] = useState<CredentialStatuses>({});
   const [studies, setStudies] = useState<Study[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchLoading, setResearchLoading] = useState(true);
+  const [researchReady, setResearchReady] = useState(false);
+  const [researchWarning, setResearchWarning] = useState('');
+  const [researchRequiresConfirmation, setResearchRequiresConfirmation] = useState(false);
+  const [researchSaving, setResearchSaving] = useState(false);
   const [researchSelection, setResearchSelection] = useState<ResearchSelection>({ ...DEFAULT_RESEARCH_SELECTION });
   const [cases, setCases] = useState<CasePreview[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -63,6 +70,8 @@ function App() {
   const sessionRef = useRef<Session | null>(null);
   const draftQueue = useRef<Promise<void>>(Promise.resolve());
   const draftRevision = useRef(0);
+  const androidBackAction = useRef<() => void>(() => {});
+  const researchSavePending = useRef(false);
   sessionRef.current = session;
 
   const applySession = useCallback((value: Session) => {
@@ -85,9 +94,18 @@ function App() {
   }, [settings]);
   const reloadResearch = useCallback(async () => {
     setResearchLoading(true);
-    try { const [nextStudies, nextParticipants] = await Promise.all([api.studies(), api.participants()]); setStudies(nextStudies); setParticipants(nextParticipants); }
+    try {
+      const [nextStudies, nextParticipants] = await Promise.all([api.studies(), api.participants()]);
+      const saved = await loadResearchSelection({ studies: nextStudies, participants: nextParticipants });
+      setStudies(nextStudies); setParticipants(nextParticipants);
+      setResearchSelection(saved.selection); setResearchWarning(saved.warning || ''); setResearchReady(true);
+      setResearchRequiresConfirmation(Boolean(saved.warning));
+    } catch (cause) { setResearchReady(false); throw cause; }
     finally { setResearchLoading(false); }
   }, []);
+  useEffect(() => listenForAndroidBackButton(() => androidBackAction.current(), () => {
+    setError('系统返回键未能初始化，请使用页面上的返回按钮。');
+  }), []);
   useEffect(() => {
     let active = true;
     setScrollReadyScreen(null);
@@ -147,6 +165,14 @@ function App() {
   }
   async function startCase() {
     if (!selectedCase || busy) return;
+    if (researchSavePending.current) { setError('训练绑定正在保存，请稍后再开始。'); return; }
+    if (!researchReady || researchLoading) { setError('训练登记尚未读取完成，请在科研页刷新后重试。'); return; }
+    if (researchRequiresConfirmation) {
+      navigate('research'); setError('上次训练绑定未能恢复，请重新设置训练用途；也可以明确选择练习模式并保存。'); return;
+    }
+    let selection: ResearchSelection;
+    try { selection = validateResearchSelection(researchSelection, { studies, participants }); }
+    catch (cause) { navigate('research'); setError(errorMessage(cause)); return; }
     const textProfile = settings.profiles.find((profile) => profile.id === settings.textProfileId);
     if (!textProfile || !credentials[textProfile.id]?.hasKey) { navigate('settings'); setError('请先保存病例与评价模型的 API 配置与 Key。'); return; }
     setBusy('start'); setError('');
@@ -157,7 +183,7 @@ function App() {
         current = makeConnection();
         try { await current.prepare(); } catch (cause) { setVoice({ ...initialVoiceState, connection: 'error', error: errorMessage(cause) }); }
       } else setVoice({ ...initialVoiceState });
-      const value = await api.start(settings, selectedCase.id, researchSelection);
+      const value = await api.start(settings, selectedCase.id, selection);
       applySession(value); setSummary({ ...emptySummary }); setText(''); setScreen('interview');
       if (current) void current.connect(settings, value.id);
     } catch (cause) { setError(errorMessage(cause)); await current?.close(); }
@@ -270,6 +296,15 @@ function App() {
   async function saveStudy(value: StudyInput) { await api.saveStudy(value); await reloadResearch(); }
   async function saveParticipant(value: ParticipantInput) { await api.saveParticipant(value); await reloadResearch(); }
   async function deleteParticipant(id: string) { await api.deleteParticipant(id); await reloadResearch(); }
+  async function applyResearchSelection(value: ResearchSelection) {
+    if (!researchReady || researchLoading) throw new Error('训练登记尚未读取完成，请刷新后重试。');
+    if (researchSavePending.current) throw new Error('训练绑定正在保存，请稍后重试。');
+    researchSavePending.current = true; setResearchSaving(true);
+    try {
+      const saved = await saveResearchSelection(value, { studies, participants });
+      setResearchSelection(saved); setResearchWarning(''); setResearchRequiresConfirmation(false);
+    } finally { researchSavePending.current = false; setResearchSaving(false); }
+  }
   async function exportResearch(options: { studyId?: string; includeAudio: boolean }) { return exportResultMessage(await api.researchExport(options)); }
   async function importResearch(json: string) {
     const result = await api.importBackup(json);
@@ -296,6 +331,12 @@ function App() {
     else if (screen === 'feedback' || screen === 'summary') navigate('history');
     else navigate('cases');
   }
+  androidBackAction.current = () => {
+    if (busy || researchSavePending.current) return;
+    if (!rootScreen) back();
+    else if (screen !== 'cases') navigate('cases');
+    else void HpbNative.minimizeApp().catch(() => setError('暂时无法退到后台，请使用系统主页键。'));
+  };
 
   return <IonApp><IonPage className="app-page">
     <header className={'app-header ' + (rootScreen ? 'root-header' : '')}>
@@ -305,6 +346,7 @@ function App() {
     </header>
     <IonContent ref={contentRef} className={'app-content ' + (interview ? 'interview-content' : '')}>
       {error && <div className="global-error"><Notice tone="error">{error}</Notice><button className="icon-button" aria-label="收起错误提示" onClick={() => setError('')}><IonIcon icon={closeOutline} /></button></div>}
+      {researchWarning && <div className="global-error"><Notice>{researchWarning}</Notice><button className="icon-button" aria-label="收起登记提示" onClick={() => setResearchWarning('')}><IonIcon icon={closeOutline} /></button></div>}
       {screen === 'cases' && <main className="page-pad cases-page">
         <div className="eyebrow">肝胆胰外科住培</div><h1 className="page-title">选择一个病例</h1><p className="page-subtitle">从主诉开始，练习完整问诊。</p>
         <div className="training-banner"><IonIcon icon={informationCircleOutline} aria-hidden="true" /><span>虚构病例 · 仅用于教学训练</span></div>
@@ -382,11 +424,11 @@ function App() {
         onDeleteProfile={async (id) => { await applyProviderSettings(await api.deleteProfile(id)); }}
         onSaveSelection={async (value) => { await applyProviderSettings(await saveSettings(value)); }}
         onProbe={async (value, capability) => api.probe(value, capability)} />}
-      {screen === 'research' && <ResearchPanel studies={studies} participants={participants} selection={researchSelection} loading={researchLoading}
-        onRefresh={reloadResearch} onSelection={setResearchSelection} onSaveStudy={saveStudy} onSaveParticipant={saveParticipant}
+      {screen === 'research' && <ResearchPanel studies={studies} participants={participants} selection={researchSelection} loading={researchLoading || researchSaving} ready={researchReady}
+        onRefresh={reloadResearch} onSelection={applyResearchSelection} onSaveStudy={saveStudy} onSaveParticipant={saveParticipant}
         onDeleteParticipant={deleteParticipant} onExport={exportResearch} onImport={importResearch} />}
     </IonContent>
-    {screen === 'case' && selectedCase && <footer className="case-start-footer"><button className="primary-button full" onClick={() => void startCase()} disabled={Boolean(busy) || !settingsReady}>{busy === 'start' ? <IonSpinner name="crescent" /> : <IonIcon icon={voiceProfile ? micOutline : documentTextOutline} />}{busy === 'start' ? '正在创建训练…' : !textProfile || !credentials[textProfile.id]?.hasKey ? '配置 API 后开始' : voiceProfile ? '开始语音问诊' : '开始文字问诊'}</button><p className="small-note">仅使用虚构病例，请勿输入真实患者身份信息。</p></footer>}
+    {screen === 'case' && selectedCase && <footer className="case-start-footer"><button className="primary-button full" onClick={() => void startCase()} disabled={Boolean(busy) || !settingsReady || !researchReady || researchLoading || researchSaving}>{busy === 'start' ? <IonSpinner name="crescent" /> : <IonIcon icon={voiceProfile ? micOutline : documentTextOutline} />}{busy === 'start' ? '正在创建训练…' : !textProfile || !credentials[textProfile.id]?.hasKey ? '配置 API 后开始' : voiceProfile ? '开始语音问诊' : '开始文字问诊'}</button><p className="small-note">仅使用虚构病例，请勿输入真实患者身份信息。</p></footer>}
     {rootScreen && <nav className="bottom-nav" aria-label="主导航"><button className={screen === 'cases' ? 'active' : ''} aria-current={screen === 'cases' ? 'page' : undefined} onClick={() => navigate('cases')}><IonIcon icon={bookOutline} /><span>训练</span></button><button className={screen === 'history' ? 'active' : ''} aria-current={screen === 'history' ? 'page' : undefined} onClick={() => navigate('history')}><IonIcon icon={documentTextOutline} /><span>记录</span></button><button className={screen === 'research' ? 'active' : ''} aria-current={screen === 'research' ? 'page' : undefined} onClick={() => navigate('research')}><IonIcon icon={flaskOutline} /><span>科研</span></button><button className={screen === 'settings' ? 'active' : ''} aria-current={screen === 'settings' ? 'page' : undefined} onClick={() => navigate('settings')}><IonIcon icon={settingsOutline} /><span>API</span></button></nav>}
     {confirm && <Modal title={confirm === 'finish' ? '结束本次问诊？' : '暂时离开问诊？'} onClose={() => setConfirm(null)}>
       <p>{confirm === 'finish' ? '请先停止说话，并检查最近的转录是否完整。结束后语音与麦克风将关闭，接下来请独立完成总结。' : '语音与麦克风将关闭，已确认的对话会保留，可从训练记录继续。'}</p>

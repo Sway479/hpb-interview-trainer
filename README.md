@@ -26,7 +26,7 @@
 
 ## 安装与使用
 
-预发布 APK 下载见 [Releases](https://github.com/Sway479/hpb-interview-trainer/releases)。它是 debug 调试包，包名 `edu.hpb.interview`，App 内版本 `0.2.0`；不代表生产安全或真实手机声学验收通过。安装包不带 API Key，需要自行配置服务商账号。
+预发布 APK 下载见 [Releases](https://github.com/Sway479/hpb-interview-trainer/releases)。它是 debug 调试包，包名 `edu.hpb.interview`，App 内版本 `0.2.1`；不代表生产安全或真实手机声学验收通过。安装包不带 API Key，需要自行配置服务商账号。
 
 1. 打开底部 **API**，添加配置并输入对应服务商 Key。
 2. 分别选择病例与评价模型、实时语音模型；也可仅使用文字问诊。
@@ -53,7 +53,7 @@
 
 当前自动预评存在**给分偏高和漏用跨轮次证据**。它是形成性草稿，需教师复核，不能直接用作正式考试成绩或已验证的研究能力结局。量规是本项目改编版本，分两组报告参考分和覆盖率，无百分制总分或合格线。见 [评分抽查](docs/ASSESSMENT_SPOTCHECK.md)。
 
-本次模拟器观察还复现了三个待修复问题：项目编号前后端长度限制不一致并显示原始英文错误；重启后“下次训练”科研绑定回到练习模式；病例准备页的 Android 系统返回键会退出应用。当前界面可演示，尚未完善。见 [公开版本状态与待办](docs/OPEN_SOURCE_STATUS.md)。
+v0.2.1 已修复项目编号校验、科研绑定重启恢复及 Android 系统返回键三项问题，94项离线测试与9项模拟器UI检查通过；全程无模型API调用。见 [修复与验证](docs/UI_FIX_VERIFICATION.md) 和 [版本状态](docs/OPEN_SOURCE_STATUS.md)。这不表示界面已全面完善。
 
 历史软件测试、合成语音联调、当前 Mac 包检查与离线界面观察分别记录；它们不能确立物理手机麦克风/外放、蓝牙、来电/后台、院内网络、评分效度或教学效果。
 

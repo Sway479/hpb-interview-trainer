@@ -66,6 +66,6 @@ Current v0.2 calls the selected provider directly from the Android native HTTPS/
 - `app/src/main/res/xml/network_security_config.xml`: cleartext disabled for release/default builds.
 - `app/src/debug/`: debug-only loopback cleartext exceptions (localhost, 127.0.0.1 and ::1); the native provider bridge requires HTTPS/WSS.
 - Gradle wrapper: upstream 8.14.3 distribution retained; [official SHA-256](https://services.gradle.org/distributions/gradle-8.14.3-all.zip.sha256) pinned and network timeout increased.
-- Android variables/root: all native modules explicitly use the installed Build Tools 36.0.0; version name is `0.2.0` and versionCode is `2`.
+- Android variables/root: all native modules explicitly use the installed Build Tools 36.0.0; version name is `0.2.1` and versionCode is `3`.
 
 The default Capacitor compile/target SDK 36, AGP 8.13.0 and Gradle 8.14.3 were retained. Build cache and runtime downloads are machine-local and excluded from this public repository.

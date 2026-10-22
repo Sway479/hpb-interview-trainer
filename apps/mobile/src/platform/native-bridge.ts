@@ -25,6 +25,8 @@ export interface HpbNativePlugin {
   sendSocket(options: { id: string; data: string }): Promise<void>;
   closeSocket(options: { id: string }): Promise<void>;
   addListener(eventName: 'socketEvent', listener: (event: NativeSocketEvent) => void): Promise<PluginListenerHandle>;
+  addListener(eventName: 'backButton', listener: () => void): Promise<PluginListenerHandle>;
+  minimizeApp(): Promise<void>;
   readData(options: { path: string }): Promise<{ exists: boolean; data: string }>;
   writeData(options: { path: string; data: string }): Promise<void>;
   listData(options: { path: string }): Promise<{ paths: string[] }>;

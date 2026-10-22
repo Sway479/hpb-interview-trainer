@@ -28,7 +28,19 @@ export function EmptyState({ icon = bookOutline, title, children, action }: { ic
 }
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => dialog?.close(); }, []);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const dialog = ref.current;
+    dialog?.showModal();
+    const onBack = (event: Event) => {
+      const open = document.querySelectorAll('dialog[open]');
+      if (!dialog?.open || event.defaultPrevented || open[open.length - 1] !== dialog) return;
+      event.preventDefault(); closeRef.current();
+    };
+    window.addEventListener('hpb:back', onBack);
+    return () => { window.removeEventListener('hpb:back', onBack); dialog?.close(); };
+  }, []);
   return <dialog ref={ref} className="app-dialog" onCancel={onClose}><div className="dialog-heading"><h2>{title}</h2><button className="icon-button" aria-label="关闭" onClick={onClose}><IonIcon icon={closeOutline} /></button></div>{children}</dialog>;
 }
 export function AudioMeter({ voice }: { voice: VoiceState }) {

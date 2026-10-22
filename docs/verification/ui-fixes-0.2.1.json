@@ -1,0 +1,79 @@
+{
+  "schema": "hpb-public-ui-fix-verification/1",
+  "date": "2026-10-22",
+  "release": "v0.2.1-alpha.1",
+  "app_version": "0.2.1",
+  "version_code": 3,
+  "simulated_only": true,
+  "apk_sha256": "5eab491e864c49c4bba8eafa3cb8c3c8f1f6a22f847bd2afdb54c5e6542682b4",
+  "typecheck": {
+    "root": "passed",
+    "mobile": "passed"
+  },
+  "node_tests": {
+    "total": 94,
+    "passed": 94,
+    "failed": 0
+  },
+  "android_package_checks": {
+    "total": 16,
+    "passed": 16
+  },
+  "emulator": {
+    "android": 14,
+    "webview": "113.0.5672.136",
+    "network_disabled": true,
+    "ui_checks": [
+      {
+        "name": "64-character research-code input boundary and Chinese fallback validation",
+        "passed": true
+      },
+      {
+        "name": "64-character code saves unchanged and participant field limits match",
+        "passed": true
+      },
+      {
+        "name": "research project, learner and baseline are saved before success",
+        "passed": true
+      },
+      {
+        "name": "force-stop restart restores exact research UUIDs and baseline",
+        "passed": true
+      },
+      {
+        "name": "Android system Back from case detail returns to cases without exiting",
+        "passed": true
+      },
+      {
+        "name": "Android system Back closes an editor before navigating",
+        "passed": true
+      },
+      {
+        "name": "root Back backgrounds safely and reopening retains the binding",
+        "passed": true
+      },
+      {
+        "name": "invalid persisted binding blocks starting until explicitly reset",
+        "passed": true
+      },
+      {
+        "name": "old registrations, session content and frozen snapshots are unchanged",
+        "passed": true
+      }
+    ],
+    "unchanged_preexisting_synthetic_sessions": 1
+  },
+  "model_call_attempts": 0,
+  "external_web_requests": 0,
+  "page_errors": [],
+  "build_and_original_signer_continuity": "passed",
+  "excluded": "Private workstation logs, identities, raw model/research data and signing credentials are retained locally; this is a public summary.",
+  "limitations": [
+    "No physical-device or new model-provider acceptance",
+    "Automatic scoring overestimation and cross-turn misses remain",
+    "No claim of clinical or teaching validity",
+    "Predictive-back gesture animation not separately checked",
+    "Post-save registry refresh failure message still needs refinement"
+  ],
+  "harness_adaptation": "First CDP attempt failed before business checks because WebView does not support Playwright context overrides; noDefaults adaptation passed all nine checks."
+}

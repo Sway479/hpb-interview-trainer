@@ -1,6 +1,6 @@
-import type { LearnerSummary, Session } from '../../../../packages/core/src/types';
-export type { Study, Participant, ResearchSelection, ResearchSnapshot, RuntimeSnapshot, TeacherCorrection } from '../../../../packages/core/src/types';
-import type { Study, Participant, ResearchSelection } from '../../../../packages/core/src/types';
+import type { LearnerSummary, Session } from '../../../../packages/core/src/types.js';
+export type { Study, Participant, ResearchSelection, ResearchSnapshot, RuntimeSnapshot, TeacherCorrection } from '../../../../packages/core/src/types.js';
+import type { Study, Participant, ResearchSelection } from '../../../../packages/core/src/types.js';
 
 export type ProviderCompany = 'qwen' | 'openai' | 'deepseek' | 'custom';
 export interface ProviderProfile {
@@ -25,7 +25,7 @@ export interface BackupData {
   drafts?: Record<string, LearnerSummary>;
 }
 export const DEFAULT_RESEARCH_SELECTION: ResearchSelection = { mode: 'practice', phase: 'training' };
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.2.1';
 export const ENGINE_VERSION = 'standalone-0.2.0';
 export const PATIENT_PROMPT_VERSION = 'patient-0.2.0';
 export const FEEDBACK_PROMPT_VERSION = 'feedback-0.2.0';

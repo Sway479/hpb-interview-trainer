@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
-import { HpbNative } from './native-bridge';
-import { newId } from '../../../../packages/core/src/ids';
+import { HpbNative } from './native-bridge.js';
+import { newId } from '../../../../packages/core/src/ids.js';
 
 export const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const native = () => Capacitor.isNativePlatform();

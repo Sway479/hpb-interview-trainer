@@ -106,7 +106,7 @@ def inspect(args: argparse.Namespace) -> None:
         notices = sorted(name for name in archive.namelist()
                          if name.startswith("assets/third-party-notices/") and name.endswith(".LICENSE"))
     checks = {
-        "packageAndVersion": "name='edu.hpb.interview' versionCode='2' versionName='0.2.0'" in badging,
+        "packageAndVersion": "name='edu.hpb.interview' versionCode='3' versionName='0.2.1'" in badging,
         "minSdk24": "minSdkVersion:'24'" in badging,
         "targetSdk36": "targetSdkVersion:'36'" in badging,
         "internetPermission": "uses-permission: name='android.permission.INTERNET'" in badging,

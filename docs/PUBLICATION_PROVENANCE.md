@@ -9,10 +9,10 @@ locally. Old developer identities and workstation paths are not published as
 commit history. The public repository contains software source and selected
 fictional emulator screenshots, not the complete private migration archive.
 
-Publication changes are limited to licensing/package license metadata, ignore
+For the initial v0.2.0-alpha.1 snapshot, publication changes were limited to licensing/package license metadata, ignore
 rules, a newly authored configuration example with empty credentials, public
 documentation, removal of workstation-specific prose and omitted
-private/optional materials. Application, native bridge, domain, test source and
+private/optional materials. In that initial snapshot, application, native bridge, domain, test source and
 build implementation are unchanged from the revision above. Dependency versions
 and integrity values are unchanged. New screenshots show the existing APK,
 not a modified application.
@@ -33,3 +33,13 @@ results are identified as historical in [OPEN_SOURCE_STATUS](OPEN_SOURCE_STATUS.
 
 This publication does not establish scoring validity, production security,
 physical-device audio acceptance, clinical accuracy or teaching effectiveness.
+
+## v0.2.1-alpha.1 follow-up
+
+The public repository now includes the three UI corrections described in
+[UI_FIX_VERIFICATION](UI_FIX_VERIFICATION.md): schema-aligned research forms,
+private next-training selection persistence, and native Android Back navigation.
+App version is 0.2.1/code3. Model prompts, rubric and engine versions are unchanged.
+Original private source history and old releases remain preserved. New application,
+test and build changes were synchronized by an explicit file list; publication
+license metadata and private-material exclusions remain in effect.
