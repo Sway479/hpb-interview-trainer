@@ -1,0 +1,6 @@
+.summary-page .summary-limit{font-size:12px;color:#526875;line-height:1.65;margin:6px 0 0}
+.summary-page .summary-limit span{display:block}.summary-page .summary-limit.invalid{color:#a13c2d}
+.summary-draft-status{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#526875;margin:8px 0 12px}
+.summary-draft-status p{margin:0}.summary-draft-status button{min-height:44px}
+.summary-save-only{margin-top:12px}.summary-load-error{margin:12px 0}
+.summary-load-error>.secondary-button{margin-top:10px}

@@ -79,6 +79,7 @@ export interface ResearchSnapshot extends ResearchSelection {
 export interface RuntimeSnapshot {
   appVersion: string; engineVersion: string; patientPromptVersion: string; feedbackPromptVersion: string;
   assessmentId: string; assessmentVersion: string;
+  feedbackGeneration?: 'automatic' | 'manual';
   text: { profileId: string; company: 'qwen' | 'openai' | 'deepseek' | 'custom'; endpoint: string; model: string };
   voice?: { profileId: string; company: 'qwen' | 'openai' | 'deepseek' | 'custom'; protocol: string; endpoint: string; model: string; voice: string };
 }

@@ -210,7 +210,9 @@ ion-spinner { width: 22px; height: 22px; color: currentColor; }
 .review-meta ion-icon { font-size: 17px; }
 .pre-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
 .teacher-card .text-button { margin-top: 5px; }
-.feedback-pending { text-align: center; padding: 30px 20px; }
+/* Isolate this changing card's compositor layer: Android WebView can reuse the
+   preceding header texture after a summary is submitted or reopened. */
+.feedback-pending { text-align: center; padding: 30px 20px; transform: translateZ(0); }
 .feedback-pending > p { font-size: 14px; margin: 14px 0 20px; overflow-wrap: anywhere; }
 .panel-symbol { display: flex; justify-content: center; align-items: center; width: 54px; height: 54px; margin: 0 auto 20px; background: #e7f2e8; border-radius: 18px; color: #168f85; }
 .panel-symbol ion-icon { font-size: 26px; }
@@ -480,3 +482,89 @@ ion-spinner { width: 22px; height: 22px; color: currentColor; }
 @media (max-height: 740px) { .interview-status { padding-top: 10px; padding-bottom: 8px; } .session-timer { font-size: 25px; } .connection-label { margin-top: 7px; margin-bottom: 9px; } .interview-status h2 { font-size: 19px; } .voice-dock { padding-top: 5px; padding-bottom: 12px; } .audio-meter { height: 27px; margin: 3px 0; } .microphone-button { width: 70px; height: 70px; } .microphone-button > ion-icon { font-size: 32px; } .microphone-hint { margin-bottom: 10px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
 
+/* Mobile research workspace: task information takes priority over branding. */
+.app-page { background: #f5f7f8; }
+.app-content { --background: #f5f7f8; }
+.app-header { background: #fff; border-bottom: 1px solid #e1e7ec; }
+.root-header { min-height: 52px; padding-top: max(5px, env(safe-area-inset-top)); padding-bottom: 5px; }
+.wordmark { font-size: 16px; letter-spacing: 0; padding-left: 0; gap: 8px; }
+.wordmark ion-icon { font-size: 23px; }
+.wordmark small { display: none; }
+.page-pad { padding: 18px 18px max(24px, env(safe-area-inset-bottom)); }
+.page-title { font-size: 23px; line-height: 1.4; letter-spacing: 0; margin-bottom: 7px; }
+.page-subtitle { font-size: 14px; line-height: 1.65; margin-bottom: 17px; color: #526574; }
+.section-heading h2 { font-size: 17px; }
+.panel { padding: 16px; border-color: #dce4e9; border-radius: 12px; }
+.panel > p, .field > p, .small-note { color: #586c78; }
+.field input, .field textarea, .field select { font-size: 14px; }
+.field label { font-size: 14px; }
+.bottom-nav { padding-top: 4px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+.bottom-nav button { min-width: 62px; min-height: 53px; color: #556b79; }
+.bottom-nav button ion-icon { font-size: 22px; }
+.text-button { min-height: 44px; }
+.cases-page .page-subtitle { margin-bottom: 14px; }
+.cases-page .research-context-card { padding: 12px 14px; margin-bottom: 13px; background: #fff; border-color: #cadbe1; }
+.cases-page .research-context-card > p { margin-top: 8px; }
+.cases-page .research-context-card p > strong { font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.cases-page .research-context-card p > span { color: #526574; font-size: 12px; }
+.cases-page .research-context-card > .text-button { margin-top: 2px; }
+.cases-page .training-banner { padding: 9px 12px; font-size: 12px; margin-bottom: 12px; }
+.cases-page .segmented { margin-bottom: 12px; }
+.cases-page .case-card { min-height: 90px; padding: 14px; }
+.cases-page .case-icon { width: 39px; height: 44px; }
+.cases-page .case-info { gap: 4px; }
+.cases-page .case-info strong { font-size: 17px; }
+.cases-page .case-info small { font-size: 12px; }
+.case-runtime-note { color: #526574; overflow-wrap: anywhere; }
+.case-start-footer { background: #fff; }
+.record-filter-panel { background: #fff; border: 1px solid #dce4e9; border-radius: 12px; padding: 14px; }
+.record-filter-panel .segmented { margin-bottom: 14px; }
+.record-filter-panel .field { margin-bottom: 12px; }
+.record-filter-panel > .field:last-child { margin-bottom: 0; }
+.record-filter-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; }
+.record-filter-grid .field { min-width: 0; }
+.record-filter-panel input, .record-filter-panel select { width: 100%; min-width: 0; }
+.history-page > .section-heading { margin: 14px 0; }
+.history-page > .section-heading .inline-actions { gap: 10px; }
+.history-page > .section-heading .text-button { font-size: 12px; }
+.history-card { border-color: #dce4e9; padding: 15px 13px; }
+.history-card strong { font-size: 16px; margin: 9px 0 5px; }
+.history-identity { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+.history-identity > span:not(.badge) { font-size: 11px; color: #586c78; }
+.history-research { color: #526574; overflow-wrap: anywhere; }
+.history-bottom { flex-wrap: wrap; gap: 7px; }
+.settings-sections { display: flex; border-bottom: 1px solid #dce4e9; background: #fff; padding: 0 18px; }
+.settings-sections > button { flex: 1; min-height: 48px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #526574; font-size: 14px; }
+.settings-sections > button[aria-pressed="true"] { color: #0d756e; border-bottom-color: #168f85; font-weight: 650; }
+.teacher-corrections { margin-bottom: 22px; }
+.teacher-corrections > summary { min-height: 48px; cursor: pointer; font-weight: 650; font-size: 15px; }
+.teacher-correction { padding: 14px 0; border-top: 1px solid #dce4e9; }
+.teacher-correction h3 { font-size: 14px; line-height: 1.6; }
+.teacher-correction > p { color: #586c78; font-size: 13px; margin: 6px 0 12px; }
+.teacher-correction .field { margin-bottom: 10px; }
+.teacher-correction .field:last-child { margin-bottom: 0; }
+.teacher-correction-result { background: #edf6f3; border-left: 3px solid #168f85; padding: 12px; margin-bottom: 13px; }
+.teacher-correction-result > p { font-size: 13px; line-height: 1.75; margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.teacher-correction-result > small { display: block; margin-top: 6px; font-size: 11px; color: #526574; }
+@media (max-width: 360px) { .record-filter-grid { grid-template-columns: 1fr; } .page-pad { padding-left: 14px; padding-right: 14px; } }
+
+/* The resumed session retains its own frozen identity, distinct from the next-training setup. */
+.resume-card .resume-identity { flex: 1; min-width: 0; }
+.resume-card .resume-identity small { white-space: normal; overflow-wrap: anywhere; }
+.preparation-feedback { margin: 12px 0; padding: 12px; background: #edf5f5; border-radius: 12px; }
+.preparation-feedback p { margin: 6px 0 0; color: #586c78; font-size: 13px; line-height: 1.6; }
+.no-flex-gap .history-identity > * + *, .no-flex-gap .history-bottom > * + * { margin-left: 6px; }
+
+.original-feedback > summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
+.original-feedback > p, .original-feedback li { font-size: 14px; line-height: 1.8; color: #526975; margin: 12px 0; }
+.original-feedback > h3 { font-size: 15px; margin-top: 14px; }
+
+.data-warning-panel { margin: 12px 18px; padding: 12px; border: 1px solid #d8b981; border-radius: 10px; background: #fff8ec; color: #69491d; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.data-warning-panel summary { cursor: pointer; min-height: 44px; font-weight: 600; padding: 10px 0; }
+.data-warning-panel ul { padding-left: 18px; }.data-warning-panel code,.data-warning-panel li span { display: block; }
+.home-work-queue { margin: 16px 0; }.home-work-queue h2 { font-size: 16px; margin-bottom: 10px; }
+.home-work-queue > div { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.home-work-queue button { min-height: 76px; border: 1px solid #d6e2e7; background: #fff; border-radius: 10px; color: #244d5d; padding: 10px 4px; }
+.home-work-queue strong,.home-work-queue span { display: block; }.home-work-queue strong { font-size: 23px; }.home-work-queue span { font-size: 12px; margin-top: 3px; }
+.home-work-queue p,.typed-limit { font-size: 11px; line-height: 1.6; color: #526875; margin: 7px 0; }
+.review-fieldset { padding: 0; margin: 0; border: 0; min-width: 0; }.review-discard-confirm { background: #fff6e7; border: 1px solid #dbbf91; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.7; margin-bottom: 14px; }

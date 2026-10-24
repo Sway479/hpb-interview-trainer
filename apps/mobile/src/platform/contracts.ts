@@ -17,7 +17,7 @@ export interface ConnectionSettings {
 export interface CredentialStatus { hasKey: boolean }
 export type CredentialStatuses = Record<string, CredentialStatus>;
 export interface ProbeResult { ok: boolean; capability: 'text' | 'voice'; message: string; model?: string }
-export interface ExportResult { fileName: string; uri?: string; bytes: number; shared?: boolean; content?: string }
+export interface ExportResult { fileName: string; uri?: string; bytes: number; shared?: boolean; content?: string; dataWarningCount?: number; recoveryNotice?: string }
 export interface ResearchExportOptions { studyId?: string; includeAudio: boolean }
 export interface BackupData {
   schemaVersion: '0.2'; exportedAt: string; simulatedCases: true;
@@ -25,7 +25,7 @@ export interface BackupData {
   drafts?: Record<string, LearnerSummary>;
 }
 export const DEFAULT_RESEARCH_SELECTION: ResearchSelection = { mode: 'practice', phase: 'training' };
-export const APP_VERSION = '0.2.1';
+export const APP_VERSION = '0.3.2';
 export const ENGINE_VERSION = 'standalone-0.2.0';
 export const PATIENT_PROMPT_VERSION = 'patient-0.2.0';
 export const FEEDBACK_PROMPT_VERSION = 'feedback-0.2.0';

@@ -105,8 +105,14 @@ def inspect(args: argparse.Namespace) -> None:
         config = json.loads(archive.read("assets/capacitor.config.json"))
         notices = sorted(name for name in archive.namelist()
                          if name.startswith("assets/third-party-notices/") and name.endswith(".LICENSE"))
+    source = (Path(__file__).resolve().parents[1] / "apps/mobile/android/app/build.gradle").read_text(encoding="utf-8")
+    source_version = re.search(r'versionName\s+"([^"]+)"', source)
+    source_code = re.search(r"versionCode\s+(\d+)", source)
+    if not source_version or not source_code:
+        raise ValueError("Could not determine expected source versionName/versionCode.")
+    expected_package = f"name='edu.hpb.interview' versionCode='{source_code.group(1)}' versionName='{source_version.group(1)}'"
     checks = {
-        "packageAndVersion": "name='edu.hpb.interview' versionCode='3' versionName='0.2.1'" in badging,
+        "packageAndVersion": expected_package in badging,
         "minSdk24": "minSdkVersion:'24'" in badging,
         "targetSdk36": "targetSdkVersion:'36'" in badging,
         "internetPermission": "uses-permission: name='android.permission.INTERNET'" in badging,

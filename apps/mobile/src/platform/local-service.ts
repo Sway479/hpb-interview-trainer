@@ -2,21 +2,25 @@ import { getCase, listCases, patientInstructions } from '../../../../packages/co
 import { getAssessmentMetadata } from '../../../../packages/core/src/assessment';
 import { feedbackPrompt, validateFeedback } from '../../../../packages/core/src/feedback';
 import { newId } from '../../../../packages/core/src/ids';
+import { hasReliableLearnerTranscript } from '../../../../packages/core/src/summary-rules';
 import type { Session, Turn, Study, Participant, LearnerSummary, ResearchSnapshot, TeacherCorrection } from '../../../../packages/core/src/types';
 import { LocalRepository, LocalError, summarySchema } from './repository';
 import { documents, audioStorage, clone, type DocumentStorage } from './storage';
 import { credentialStatus } from './settings';
 import { completeChat, safeProviderMessage, type ChatResult, type ChatOptions } from './providers';
+import type { FeedbackGeneration } from './feedback-preferences';
 import { APP_VERSION, ENGINE_VERSION, PATIENT_PROMPT_VERSION, FEEDBACK_PROMPT_VERSION, DEFAULT_RESEARCH_SELECTION,
   type ConnectionSettings, type ProviderProfile, type ResearchSelection } from './contracts';
 
 interface Owner {stop():Promise<Session>;disconnect():Promise<void>}
+export interface SummaryOptions { generateFeedback?: boolean }
 interface Dependencies {repository?:LocalRepository;storage?:DocumentStorage;audio?:typeof audioStorage;
   credentials?:typeof credentialStatus;chat?:(profile:ProviderProfile,instructions:string,input:string,options?:ChatOptions)=>Promise<ChatResult>}
 export class LocalService {
   readonly repository:LocalRepository;
   private storage:DocumentStorage;private audio:typeof audioStorage;private credentials:typeof credentialStatus;private chat:NonNullable<Dependencies['chat']>;
-  private owners=new Map<string,Owner>();private textBusy=new Set<string>();private feedbackBusy=new Map<string,Promise<Session>>();
+  private owners=new Map<string,Owner>();private textBusy=new Set<string>();
+  private feedbackBusy=new Map<string,{summary:LearnerSummary;generating:boolean;task:Promise<Session>}>();
   private audioTasks=new Map<string,Promise<void>>();private createChain=Promise.resolve();
   private audioFailures=new Set<string>();
   constructor(options:Dependencies={}){this.storage=options.storage??documents;this.repository=options.repository??new LocalRepository(this.storage);this.audio=options.audio??audioStorage;
@@ -24,8 +28,9 @@ export class LocalService {
   get=(id:string)=>this.repository.get(id);
   list=()=>this.repository.list();
   cases=async()=>listCases();
-  async start(settings:ConnectionSettings,caseId:string,selection:ResearchSelection=DEFAULT_RESEARCH_SELECTION):Promise<Session>{
+  async start(settings:ConnectionSettings,caseId:string,selection:ResearchSelection=DEFAULT_RESEARCH_SELECTION,feedbackGeneration:FeedbackGeneration='automatic'):Promise<Session>{
     const task=this.createChain.then(async()=>{
+      if(!['automatic','manual'].includes(feedbackGeneration))throw new LocalError('反馈生成方式无效，请重新保存设置。');
       const definition=getCase(caseId),text=settings.profiles.find(p=>p.id===settings.textProfileId),voice=settings.profiles.find(p=>p.id===settings.voiceProfileId);
       if(!text)throw new LocalError('请先选择文本模型配置。');
       const keys=await this.credentials([text.id]);if(!keys[text.id]?.hasKey)throw new LocalError('请先在API配置中保存文本模型的密钥。');
@@ -42,7 +47,7 @@ export class LocalService {
       const assessment=getAssessmentMetadata();const frozen:ConnectionSettings={...clone(settings),profiles:settings.profiles.filter(p=>p.id===text.id||p.id===voice?.id).map(p=>{const {hasKey,...publicProfile}=p;return clone(publicProfile);})};
       await this.storage.write(`execution/${id}.json`,JSON.stringify(frozen));
       return this.repository.create({id,caseId,caseVersion:definition.version,caseTitle:definition.title,createdAt:now,status:'interview',turns:[],research,
-        runtime:{appVersion:APP_VERSION,engineVersion:ENGINE_VERSION,patientPromptVersion:PATIENT_PROMPT_VERSION,feedbackPromptVersion:FEEDBACK_PROMPT_VERSION,assessmentId:assessment.id,assessmentVersion:assessment.version,
+        runtime:{appVersion:APP_VERSION,engineVersion:ENGINE_VERSION,patientPromptVersion:PATIENT_PROMPT_VERSION,feedbackPromptVersion:FEEDBACK_PROMPT_VERSION,assessmentId:assessment.id,assessmentVersion:assessment.version,feedbackGeneration,
           text:{profileId:text.id,company:text.company,endpoint:text.chatUrl,model:text.chatModel},
           ...(voice?{voice:{profileId:voice.id,company:voice.company,protocol:voice.realtimeProtocol,endpoint:voice.realtimeUrl,model:voice.realtimeModel,voice:voice.voice}}:{})},
         auditEvents:[{id:newId(),at:now,type:'session_created'}]});
@@ -94,14 +99,41 @@ export class LocalService {
   recordingBlob=(id:string,role:'learner'|'patient')=>this.audio.blob(id,role);
   async end(id:string):Promise<Session>{if(this.textBusy.has(id))throw new LocalError('患者正在回答，请等待后结束。');const owner=this.owners.get(id);if(owner)return owner.stop();return this.commitEnd(id);}
   async commitEnd(id:string):Promise<Session>{return this.repository.mutate(id,s=>{if(s.status!=='interview')return;s.status='summary';s.endedAt=new Date().toISOString();s.auditEvents=[...(s.auditEvents??[]),{id:newId(),at:s.endedAt,type:'interview_ended'}];});}
-  async summary(settings:ConnectionSettings,id:string,value:LearnerSummary):Promise<Session>{
-    if(this.feedbackBusy.has(id))return this.feedbackBusy.get(id)!;
-    const summary=summarySchema.parse(value);
-    const task=(async()=>{const session=await this.repository.mutate(id,s=>{if(s.status!=='summary')throw new LocalError('请先结束问诊；已生成的反馈不能重复提交。');
-        if(!s.turns.some(t=>t.role==='learner'&&t.final&&!t.interrupted&&t.text.trim()))throw new LocalError('没有已确认的学员问诊记录，暂不能评分。');
-        s.summary=clone(summary);s.status='feedback_pending';delete s.feedbackError;});
-      const definition=getCase(session.caseId);let raw='',model='';
+  async summary(settings:ConnectionSettings,id:string,value:LearnerSummary,options:SummaryOptions={}):Promise<Session>{
+    const summary=summarySchema.parse(value),generateFeedback=options.generateFeedback!==false;
+    const sameSummary=(other:LearnerSummary)=>Object.keys(summary).every(key=>summary[key as keyof LearnerSummary]===other[key as keyof LearnerSummary]);
+    const busy=this.feedbackBusy.get(id);
+    if(busy){
+      if(!sameSummary(busy.summary))throw new LocalError('独立总结已提交并锁定，生成或重试反馈必须使用原总结。');
+      if(!generateFeedback&&busy.generating)throw new LocalError('反馈请求正在处理，请等待后查看保存状态。');
+      if(generateFeedback&&!busy.generating){
+        await busy.task;
+        if(this.feedbackBusy.get(id)===busy)this.feedbackBusy.delete(id);
+        return this.summary(settings,id,summary,options);
+      }
+      return busy.task;
+    }
+    const task=(async()=>{
+      const current=await this.get(id);
+      if(current.summary&&!sameSummary(current.summary))throw new LocalError('独立总结已提交并锁定，生成或重试反馈必须使用原总结。');
+      // Repeated requests must not rewrite an accepted model response or its original persisted bytes.
+      if(current.feedback&&['feedback_ready','reviewed'].includes(current.status))return current;
+      if(current.summary&&!generateFeedback&&current.status==='summary')return current;
+      const session=await this.repository.mutate(id,s=>{
+        if(s.status!=='summary')throw new LocalError('请先结束问诊，或等待当前反馈生成完成。');
+        if(s.summary&&!sameSummary(s.summary))throw new LocalError('独立总结已提交并锁定，生成或重试反馈必须使用原总结。');
+        if(generateFeedback&&!hasReliableLearnerTranscript(s.turns))throw new LocalError('没有可靠的学员问诊记录，暂不能生成反馈；独立总结可手动保存。');
+        const now=new Date().toISOString(),alreadySubmitted=Boolean(s.summary);
+        if(!alreadySubmitted){s.summary=clone(summary);s.auditEvents=[...(s.auditEvents??[]),{id:newId(),at:now,type:'summary_submitted',reason:generateFeedback?'feedback_requested':'feedback_deferred'}];}
+        if(generateFeedback){const retry=Boolean(s.feedbackError||s.feedbackAttempts?.length);
+          s.auditEvents=[...(s.auditEvents??[]),{id:newId(),at:now,type:'feedback_generation_requested',reason:(options.generateFeedback===true?'manual':'automatic')+(retry?'_retry':'')}];
+          s.status='feedback_pending';delete s.feedbackError;
+        }
+      });
+      if(!generateFeedback)return session;
+      let raw='',model='';
       try{
+        const definition=getCase(session.caseId);
         if(definition.version!==session.caseVersion)throw new LocalError('历史病例版本已改变，原记录可回看，本版不重新生成评分。');
         const frozen=await this.sessionSettings(settings,id),profile=frozen.profiles.find(p=>p.id===frozen.textProfileId);if(!profile)throw new LocalError('缺少本次训练的模型配置。');
         model=profile.chatModel;const prompt=feedbackPrompt(definition,session),result=await this.chat(profile,prompt.instructions,prompt.input,{purpose:'assessment'});raw=result.text;model=result.model;
@@ -109,7 +141,7 @@ export class LocalService {
         const feedback=validateFeedback(raw,definition,session,model);
         return this.repository.mutate(id,s=>{if(s.status!=='feedback_pending')throw new LocalError('反馈状态已改变。');s.feedback=feedback;s.status='feedback_ready';s.feedbackAttempts=[...(s.feedbackAttempts??[]),{id:newId(),at:new Date().toISOString(),model,raw,accepted:true}];});
       }catch(error){const message=safeProviderMessage(error);await this.repository.mutate(id,s=>{if(s.status==='feedback_pending'){s.status='summary';s.feedbackError='总结已保存，反馈尚未完成：'+message;if(raw)s.feedbackAttempts=[...(s.feedbackAttempts??[]),{id:newId(),at:new Date().toISOString(),model,raw,accepted:false,error:message}];}});throw new LocalError('总结已保存，可以重试反馈：'+message,502);}
-    })();this.feedbackBusy.set(id,task);try{return await task;}finally{this.feedbackBusy.delete(id);}
+    })();this.feedbackBusy.set(id,{summary:clone(summary),generating:generateFeedback,task});try{return await task;}finally{if(this.feedbackBusy.get(id)?.task===task)this.feedbackBusy.delete(id);}
   }
   review=(id:string,reviewer:string,notes:string,corrections?:TeacherCorrection[])=>this.repository.mutate(id,s=>{
     if(!s.feedback||!['feedback_ready','reviewed'].includes(s.status))throw new LocalError('反馈尚未生成。');if(!reviewer.trim()||reviewer.length>100||notes.trim().length<2||notes.length>6000)throw new LocalError('请填写复核者编号及备注。');

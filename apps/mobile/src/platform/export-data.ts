@@ -1,13 +1,26 @@
 import type { BackupData } from './contracts';
+import { buildInterviewResultExplanation, formatInterviewResultExplanation } from '../../../../packages/core/src/result-explanation';
 
 type Row=Record<string,unknown>;
+export type ResearchExportScope = 'all' | 'study' | 'session';
+export interface DataWarning { path: string; message: string; raw?: string }
+export function recoveryNotice(warningCount:number,scope:ResearchExportScope):string|undefined {
+  if(!warningCount)return undefined;
+  return scope==='all'
+    ? `本机有${warningCount}条异常资料。backup.json只包含可读取的记录；已取得的异常原文另存recovery目录，需人工核对，不能把本次导出视为完整备份。`
+    : `另有${warningCount}条本机异常资料，未放入本次限定范围导出。请在科研工作区选择“本机全部资料”生成ZIP，单独保管并人工核对恢复资料；本次导出不能证明本机资料完整。`;
+}
 /** UTF-8 BOM, RFC4180 quoting, and spreadsheet formula escaping. Exact source stays in backup.json. */
 export function toCsv(rows:Row[],columns:string[]):string {
   const cell=(value:unknown)=>{let text=value==null?'':typeof value==='object'?JSON.stringify(value):String(value);
     if(/^[\s]*[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';};
   return '\uFEFF'+[columns.map(cell).join(','),...rows.map(row=>columns.map(key=>cell(row[key])).join(','))].join('\r\n')+'\r\n';
 }
-export function researchFiles(backup:BackupData,includeAudio:boolean,warnings:readonly {path:string;message:string;raw?:string}[]=[]):{path:string;content:string}[]{
+export function researchFiles(backup:BackupData,includeAudio:boolean,warnings:readonly DataWarning[]=[],scope:ResearchExportScope='all'):{path:string;content:string}[]{
+  // A damaged record's project cannot be trusted. Its original text belongs only
+  // in an explicit all-device recovery export, never a project/session package.
+  const scopedWarnings=scope==='all'?warnings.map(({path,message})=>({path,message})):warnings.length?[{message:recoveryNotice(warnings.length,scope)!}]:[];
+  const notice=recoveryNotice(warnings.length,scope);
   const studies:Row[]=backup.studies.map(x=>({...x})),participants:Row[]=backup.participants.map(x=>({...x}));
   const sessions:Row[]=[],turns:Row[]=[],scores:Row[]=[],calls:Row[]=[],reviews:Row[]=[],attempts:Row[]=[],audit:Row[]=[];
   for(const session of backup.sessions){const r=session.research,t=session.runtime,a=session.feedback?.assessment;
@@ -17,7 +30,7 @@ export function researchFiles(backup:BackupData,includeAudio:boolean,warnings:re
       created_at:session.createdAt,ended_at:session.endedAt,duration_seconds:session.endedAt?Math.max(0,(Date.parse(session.endedAt)-Date.parse(session.createdAt))/1000):null,
       status:session.status,learner_final_turns:session.turns.filter(x=>x.role==='learner'&&x.final&&!x.interrupted).length,
       text_company:t?.text.company,text_endpoint:t?.text.endpoint,text_model_requested:t?.text.model,voice_company:t?.voice?.company,voice_protocol:t?.voice?.protocol,voice_model_requested:t?.voice?.model,
-      app_version:t?.appVersion,engine_version:t?.engineVersion,patient_prompt_version:t?.patientPromptVersion,feedback_prompt_version:t?.feedbackPromptVersion,
+      app_version:t?.appVersion,engine_version:t?.engineVersion,patient_prompt_version:t?.patientPromptVersion,feedback_prompt_version:t?.feedbackPromptVersion,feedback_generation:t?.feedbackGeneration,
       assessment_id:a?.id,assessment_version:a?.version,feedback_model:session.feedback?.model,
       case_score:session.feedback?.scoreSummary?.case_history.score,case_scored_max:session.feedback?.scoreSummary?.case_history.maxScore,case_coverage:session.feedback?.scoreSummary?.case_history.coverage,
       process_score:session.feedback?.scoreSummary?.communication_process.score,process_scored_max:session.feedback?.scoreSummary?.communication_process.maxScore,process_coverage:session.feedback?.scoreSummary?.communication_process.coverage,
@@ -39,14 +52,24 @@ export function researchFiles(backup:BackupData,includeAudio:boolean,warnings:re
     csv:{encoding:'UTF-8 with BOM',lineEnding:'CRLF',formulaEscaping:'An apostrophe is prepended to cells whose first non-whitespace character is = + - @. Exact original text remains in backup.json.'},
     audio:{inputRates:'Qwen 16000 Hz, OpenAI Realtime 24000 Hz; actual rate stored in native WAV headers',outputRate:24000,format:'PCM16LE mono WAV',streams:'learner and patient are separate sequential streams, not a synchronized conversation timeline',restoration:'JSON restores text/metadata; WAV files stay in the export ZIP and are not imported by JSON restore.'},
     assessment:'Adapted formative reference scores; denominators cover scored items only. Preserve original AI results alongside teacher notes/corrections. No validated pass line.',
-    credentialExported:false,warnings:warnings.map(({path,message})=>({path,message}))};
+    credentialExported:false,resultExplanations:{version:'1.0',derived:true,source:'Existing feedback, reliable transcript and local teacher review; no new model request or regrading',restoration:'Derived explanations are for reading; backup.json remains the exact restore source.'},
+    recovery:{scope,warningCount:warnings.length,rawRecoveryCount:scope==='all'?warnings.filter(warning=>warning.raw!==undefined).length:0,...(notice?{notice}:{})},warnings:scopedWarnings};
   const files=[{path:'backup.json',content:JSON.stringify(backup,null,2)},{path:'manifest.json',content:JSON.stringify(manifest,null,2)},
     csv('studies.csv',studies,['id','code','title']),csv('participants.csv',participants,['id','studyId','code','group']),
-    csv('sessions.csv',sessions,['session_id','study_id','participant_id','case_id']),csv('turns.csv',turns,['session_id','turn_id','role','text']),
+    csv('sessions.csv',sessions,['session_id','study_id','participant_id','case_id','feedback_generation']),csv('turns.csv',turns,['session_id','turn_id','role','text']),
     csv('assessments.csv',scores,['session_id','criterion_id','score','status']),csv('model_calls.csv',calls,['session_id','kind','model','elapsedMs']),
     csv('teacher_reviews.csv',reviews,['session_id','reviewer_code','notes']),csv('feedback_attempts.csv',attempts,['session_id','id','accepted','raw']),
     csv('audit_events.csv',audit,['session_id','id','at','type','reason']),
     {path:'README.txt',content:'问诊陪练科研导出 v0.2\n所有病例为虚构教学病例；研究登记不等于伦理或同意已获批准。\n学员编号由使用者登记，当前表按ID关联。sessions.csv中的组别、年级等是训练开始时快照。\nbackup.json为精确源数据及可恢复的文字/元数据备份；CSV对公式字符加前缀，分析时以JSON核对。\nassessments.csv保存原始模型参考分；teacher_reviews.csv单独保存复核，不覆盖原始结果。\n评分分母只含已评项目，结合coverage解释；不能把null当0。\n录音若选择包含，见audio与recordings-manifest.json；JSON恢复不自动恢复录音文件。\n模型耗时是API调用耗时，不是完整问诊语音延迟。\n时间来自设备时钟，建议科研前校对手机时间。\n'}];
-  warnings.forEach((warning,index)=>{if(warning.raw)files.push({path:`recovery/record-${index+1}.txt`,content:warning.raw});});
+  const explanations=backup.sessions.filter(session=>session.feedback).map(buildInterviewResultExplanation);
+  files.push({path:'interview-result-explanations.json',content:JSON.stringify(explanations,null,2)});
+  explanations.forEach(report=>files.push({path:`result-explanations/${report.sessionId}.txt`,content:formatInterviewResultExplanation(report)}));
+  const readme=files.find(file=>file.path==='README.txt');
+  if(readme){
+    readme.content+='interview-result-explanations.json与result-explanations/*.txt为本机整理的形成性结果说明，版本见文件；不重新评分、不覆盖原始结果，也不是正式考试结论。恢复仍以backup.json为准。\n';
+    readme.content+='sessions.csv的feedback_generation是开始训练时固定的反馈生成方式；旧版未记录时留空，不根据当前设置补写。\n';
+    if(notice)readme.content+=notice+'\n';
+  }
+  if(scope==='all')warnings.forEach((warning,index)=>{if(warning.raw!==undefined)files.push({path:`recovery/record-${index+1}.txt`,content:warning.raw});});
   return files;
 }

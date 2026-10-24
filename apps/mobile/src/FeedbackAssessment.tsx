@@ -1,6 +1,7 @@
 import { IonIcon } from '@ionic/react';
 import { chevronDownOutline, chevronForwardOutline, informationCircleOutline, playOutline } from 'ionicons/icons';
 import type { AssessmentGroup, Feedback, FeedbackItem, Session } from '../../../packages/core/src/types';
+import { createEvidenceResolver } from '../../../packages/core/src/evidence';
 import { Badge, Notice, turnTime } from './components';
 
 const groups: { id: AssessmentGroup; label: string; description: string }[] = [
@@ -9,26 +10,31 @@ const groups: { id: AssessmentGroup; label: string; description: string }[] = [
 ];
 const notScored = { insufficient_evidence: '证据不足', not_applicable: '本次不适用', unobservable: '无法观察' };
 export function FeedbackAssessment({ feedback, session, onEvidence }: { feedback: Feedback; session: Session; onEvidence: (id: string) => void }) {
+  const resolver = createEvidenceResolver(session.turns);
   function itemCard(item: FeedbackItem) {
     const hasScore = typeof item.score === 'number';
+    const correction = session.review?.corrections?.find(value => value.criterionId === item.criterionId);
     return <section className="assessment-item" key={item.criterionId}>
-      <div className="feedback-item-heading"><h3>{item.label}</h3><Badge tone={!hasScore ? 'neutral' : item.score === 2 ? 'teal' : 'amber'}>{hasScore ? item.score + ' / ' + (item.maxScore || 2) : '未计分'}</Badge></div>
+      <div className="feedback-item-heading"><h3>{item.label}</h3><Badge tone={!hasScore ? 'neutral' : item.score === 2 ? 'teal' : 'amber'}>{hasScore ? 'AI ' + item.score + ' / ' + (item.maxScore || 2) : 'AI未计分'}</Badge></div>
+      {correction && <div className="teacher-correction-result"><Badge tone="teal">教师：{correction.score === null ? '未计分' : correction.score + ' / 2'}</Badge><p>{correction.reason}</p><small>教师修正单独保存，未覆盖AI原分。</small></div>}
       {!hasScore && <span className="not-scored-label">{item.notScoredReason ? notScored[item.notScoredReason] : '尚无可靠证据'}</span>}
       <p>{item.comment}</p>
       {item.score === 0 && item.zeroEvidence && <div className="zero-evidence"><strong>明确不当行为的原文依据</strong><p>{item.zeroEvidence.problem}</p></div>}
       {!!item.evidence.length ? <div className="evidence-list">{item.evidence.map((evidence, index) => {
-        const source = session.turns.find((turn) => turn.id === evidence.turnId);
-        const reliable = source?.final && source.verification !== 'paraphrase_unverified';
-        return <button key={evidence.turnId + index} className="evidence-card" onClick={() => onEvidence(evidence.turnId)} disabled={!source}>
-          <span><IonIcon icon={playOutline} />{source ? turnTime(source, session) : '来源未匹配'}<small>{source?.role === 'learner' ? '你的提问' : source ? '患者回应' : '证据不足'}</small></span>
-          <q>{evidence.quote}</q><span className="evidence-link">{source ? reliable ? '查看对应原文' : '转录待核对 · 查看原文' : '无法定位原文'}<IonIcon icon={chevronForwardOutline} /></span>
+        const resolved = resolver.resolve(evidence), source = resolved.turn;
+        const issueLabel = resolved.issue === 'duplicate_turn_id' ? '来源ID重复，无法唯一定位'
+          : resolved.issue === 'empty_quote' ? '原引用为空，不能作证据'
+            : resolved.issue === 'quote_mismatch' ? '引文不匹配 · 查看原文' : '转录待核对 · 查看原文';
+        return <button type="button" key={evidence.turnId + index} className="evidence-card" onClick={() => { if (resolved.canNavigate) onEvidence(evidence.turnId); }} disabled={!resolved.canNavigate}>
+          <span><IonIcon icon={playOutline} />{source ? turnTime(source, session) : resolved.issue === 'duplicate_turn_id' ? '来源有歧义' : '来源未匹配'}<small>{source?.role === 'learner' ? '你的提问' : source ? '患者回应' : '证据不足'}</small></span>
+          <q>{evidence.quote.trim() ? evidence.quote : '（空引用）'}</q><span className="evidence-link">{resolved.reliable ? '查看对应原文' : resolved.issue === 'missing_turn' ? '无法定位原文' : issueLabel}<IonIcon icon={chevronForwardOutline} /></span>
         </button>;
       })}</div> : <p className="insufficient-evidence"><IonIcon icon={informationCircleOutline} />没有可靠的引用原文；未观察项目不计为 0 分。</p>}
     </section>;
   }
   const grouped = feedback.items.some((item) => item.group);
   return <section className="assessment-section">
-    {feedback.scoreSummary && <><div className="section-heading"><h2>两组参考分与覆盖</h2><Badge tone="amber">待教师复核</Badge></div><div className="score-summary-grid">
+    {feedback.scoreSummary && <><div className="section-heading"><h2>AI原始分与覆盖</h2><Badge tone="amber">形成性草稿</Badge></div><div className="score-summary-grid">
       {groups.map(({ id, label }) => {
         const value = feedback.scoreSummary?.[id];
         if (!value) return null;

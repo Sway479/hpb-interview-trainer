@@ -1,0 +1,74 @@
+.interview-result-explanation{color:#263c49;overflow-wrap:anywhere}
+.interview-result-explanation .ire-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.interview-result-explanation .ire-heading h2{font-size:18px;line-height:1.4;margin:0 8px 0 0}
+.interview-result-explanation .ire-context{display:flex;flex-wrap:wrap;justify-content:space-between;margin:0;color:#526875;font-size:12px;line-height:1.65}
+.interview-result-explanation .ire-context strong{font-weight:550;margin-right:12px}
+.interview-result-explanation .ire-headline{font-size:15px;font-weight:600;line-height:1.75;margin:14px 0 8px}
+.interview-result-explanation .ire-scope{font-size:13px;line-height:1.75;margin:0 0 10px;color:#526875}
+.interview-result-explanation .ire-basis{display:grid;grid-template-columns:minmax(0,1fr);font-size:12px;color:#526875;line-height:1.8;padding:10px 12px;background:#f2f6f8;border-radius:8px}
+.interview-result-explanation .ire-section-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;margin:20px 0 10px}
+.interview-result-explanation .ire-section-heading h3{font-size:16px;margin:0 10px 0 0}
+.interview-result-explanation .ire-section-heading>span{font-size:12px;color:#526875}
+.interview-result-explanation .ire-item{border:1px solid #d9e3e7;border-radius:10px;padding:13px 12px;margin:0 0 12px;background:#fff}
+.interview-result-explanation .ire-item:last-child{margin-bottom:0}
+.interview-result-explanation .ire-item-improve{border-left:3px solid #b78234}
+.interview-result-explanation .ire-item-strength{border-left:3px solid #44837d}
+.interview-result-explanation .ire-item-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}
+.interview-result-explanation .ire-item-heading h4{display:flex;align-items:flex-start;flex:1 1 155px;font-size:15px;line-height:1.65;margin:0 8px 6px 0}
+.interview-result-explanation .ire-item-heading .badge{font-size:11px;margin-top:1px;margin-bottom:6px;white-space:nowrap}
+.interview-result-explanation .ire-priority-number{display:inline-flex;align-items:center;justify-content:center;flex:0 0 23px;min-height:23px;margin:1px 7px 0 0;border-radius:6px;background:#f5ecdc;color:#79521f;font-size:12px}
+.interview-result-explanation .ire-finding{font-size:13px;line-height:1.75;margin:2px 0 10px}
+.interview-result-explanation .ire-comment{margin:8px 0 10px;font-size:13px;line-height:1.75}
+.interview-result-explanation .ire-comment>strong{display:block;font-size:12px;color:#526875;font-weight:550;margin-bottom:3px}
+.interview-result-explanation .ire-comment p{margin:0;white-space:pre-wrap}
+.interview-result-explanation .ire-teacher-comment{padding:10px 11px;background:#edf5f4;border-radius:7px}
+.interview-result-explanation .ire-evidence-section h5{font-size:12px;color:#526875;font-weight:550;margin:13px 0 6px}
+.interview-result-explanation .ire-evidence{display:block;text-align:left;width:100%;border:1px solid #dbe6ea;background:#f7fafb;border-radius:7px;padding:10px;margin:0 0 7px;min-height:48px;color:#263c49;cursor:pointer;font:inherit}
+.interview-result-explanation .ire-evidence:last-child{margin-bottom:0}
+.interview-result-explanation .ire-evidence:disabled{cursor:default;color:#657883}
+.interview-result-explanation .ire-evidence-heading{display:flex;justify-content:space-between;flex-wrap:wrap;font-size:11px;line-height:1.65;color:#526875;margin-bottom:5px}
+.interview-result-explanation .ire-evidence-heading time{margin-left:7px}
+.interview-result-explanation .ire-evidence-heading>span:last-child{display:inline-flex;align-items:center;color:#23656a}
+.interview-result-explanation .ire-evidence-heading ion-icon{margin-left:3px;flex-shrink:0}
+.interview-result-explanation .ire-evidence q{display:block;font-size:13px;line-height:1.75;white-space:pre-wrap}
+.interview-result-explanation .ire-no-evidence{font-size:12px;line-height:1.75;margin:0;color:#526875}
+.interview-result-explanation .ire-practice{margin:13px 0 0;font-size:13px;line-height:1.8}
+.interview-result-explanation .ire-practice>div{margin-top:10px}
+.interview-result-explanation .ire-practice dt{font-weight:600;font-size:12px;margin-bottom:3px}
+.interview-result-explanation .ire-practice dt span{font-weight:400;color:#526875;margin-left:4px;font-size:11px}
+.interview-result-explanation .ire-practice dd{margin:0;white-space:pre-wrap}
+.interview-result-explanation .ire-question{padding:10px 11px;border-radius:7px;background:#f1f6fa}
+.interview-result-explanation .ire-retain-check{font-size:13px;line-height:1.75;margin-top:12px}
+.interview-result-explanation .ire-retain-check strong{font-size:12px}
+.interview-result-explanation .ire-retain-check p{margin:3px 0 0}
+.interview-result-explanation .ire-item-notes{margin-top:12px;border-top:1px solid #e4ebee;padding-top:8px;color:#526875;font-size:12px;line-height:1.75}
+.interview-result-explanation .ire-item-notes summary{cursor:pointer;min-height:28px}
+.interview-result-explanation .ire-item-notes summary span{margin-left:8px}
+.interview-result-explanation .ire-item-notes ul{margin:7px 0 0;padding-left:18px}
+.interview-result-explanation .ire-item-notes li+li{margin-top:5px}
+.interview-result-explanation .ire-detail-group{border-top:1px solid #dce6ea;margin-top:13px}
+.interview-result-explanation .ire-detail-group>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;min-height:56px;list-style:none;padding:11px 0;font-size:14px;line-height:1.65}
+.interview-result-explanation .ire-detail-group>summary::-webkit-details-marker{display:none}
+.interview-result-explanation .ire-detail-group>summary strong{display:block;font-weight:600}
+.interview-result-explanation .ire-detail-group>summary small{display:block;font-size:12px;color:#526875;font-weight:400;margin-top:1px}
+.interview-result-explanation .ire-detail-group>summary>ion-icon{flex-shrink:0;margin-left:10px;color:#526875;transition:transform .15s}
+.interview-result-explanation .ire-detail-group[open]>summary>ion-icon{transform:rotate(180deg)}
+.interview-result-explanation .ire-detail-body{padding:0 0 4px}
+.interview-result-explanation .ire-empty,.interview-result-explanation .ire-group-intro{font-size:13px;line-height:1.75;margin:0 0 12px;color:#526875}
+.interview-result-explanation .ire-review-note{padding:12px;margin-top:14px;background:#edf5f4;border-radius:8px}
+.interview-result-explanation .ire-review-note h3{font-size:14px;margin:0 0 6px}
+.interview-result-explanation .ire-review-note p{white-space:pre-wrap;font-size:13px;line-height:1.75;margin:0}
+.interview-result-explanation .ire-limitations ul{font-size:12px;line-height:1.8;color:#526875;margin:0;padding-left:18px}
+.interview-result-explanation .ire-limitations li+li{margin-top:7px}
+.interview-result-explanation .ire-version{font-size:11px;color:#526875;margin:12px 0 0}
+.interview-result-explanation .ire-copy-actions{display:flex;flex-wrap:wrap;align-items:center;margin-top:17px}
+.interview-result-explanation .ire-copy-actions>.secondary-button{margin:0 10px 0 0;min-height:48px}
+.interview-result-explanation .ire-text-toggle{border:0;background:transparent;color:#23656a;min-height:48px;font-size:12px;padding:8px 0;text-align:left;cursor:pointer}
+.interview-result-explanation .ire-copy-message{font-size:12px;line-height:1.75;color:#526875;margin:9px 0 0}
+.interview-result-explanation .ire-copy-text{margin-top:12px}
+.interview-result-explanation .ire-copy-text label{font-size:13px;font-weight:600}
+.interview-result-explanation .ire-copy-text p{font-size:12px;line-height:1.75;color:#526875;margin:5px 0 8px}
+.interview-result-explanation .ire-copy-text textarea{display:block;width:100%;min-height:240px;resize:vertical;font-size:12px;line-height:1.75;padding:10px;border:1px solid #cfdee4;border-radius:8px;background:#f8fafb;color:#263c49;box-sizing:border-box}
+.interview-result-explanation button:focus-visible,.interview-result-explanation summary:focus-visible,.interview-result-explanation textarea:focus-visible{outline:2px solid #267d88;outline-offset:3px}
+@media(min-width:640px){.interview-result-explanation .ire-item{padding:15px 16px}.interview-result-explanation .ire-basis{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}.interview-result-explanation .ire-practice>div:not(.ire-question){display:grid;grid-template-columns:84px minmax(0,1fr)}.interview-result-explanation .ire-practice dt{margin-right:10px}}
+@media(prefers-reduced-motion:reduce){.interview-result-explanation .ire-detail-group>summary>ion-icon{transition:none}}

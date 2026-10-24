@@ -5,6 +5,7 @@ import { addOutline, checkmarkCircle, chevronForwardOutline, eyeOffOutline, eyeO
 import type { ConnectionSettings, ProviderProfile } from './platform/contracts';
 import { defaultSettings } from './platform/settings';
 import { Badge, EmptyState, Modal, Notice } from './components';
+import './ProviderSettings.css';
 
 export interface UIProbeResult { ok: boolean; message: string; model?: string }
 interface Props {
@@ -37,6 +38,7 @@ function preset(company: ProviderProfile['company'], existing: ProviderProfile[]
 }
 export function ProviderSettings({ settings, credentials, onSaveProfile, onDeleteProfile, onSaveSelection, onProbe }: Props) {
   const [selection, setSelection] = useState(settings);
+  const [section, setSection] = useState<'models' | 'providers'>('models');
   const [editing, setEditing] = useState<ProviderProfile | null>(null);
   const [original, setOriginal] = useState<ProviderProfile | null>(null);
   const [keyInput, setKeyInput] = useState('');
@@ -92,25 +94,52 @@ export function ProviderSettings({ settings, credentials, onSaveProfile, onDelet
     finally { setBusy(''); }
   }
   const voiceProfiles = settings.profiles.filter((profile) => profile.company !== 'deepseek' && profile.realtimeProtocol !== 'none' && profile.realtimeUrl && profile.realtimeModel);
+  const textChoice = settings.profiles.find((profile) => profile.id === selection.textProfileId);
+  const voiceChoice = voiceProfiles.find((profile) => profile.id === selection.voiceProfileId);
+  const selectionChanged = selection.textProfileId !== settings.textProfileId || selection.voiceProfileId !== settings.voiceProfileId;
+  function keyStatus(profile: ProviderProfile) {
+    return <Badge tone={credentials[profile.id]?.hasKey ? 'teal' : credentials[profile.id] ? 'amber' : 'neutral'} icon={keyOutline}>{credentials[profile.id]?.hasKey ? 'Key 已保存' : credentials[profile.id] ? '未设置 Key' : 'Key 状态待确认'}</Badge>;
+  }
   return <main className="page-pad provider-settings">
-    <div className="eyebrow">手机直接连接所选服务商</div><h1 className="page-title">API 配置</h1><p className="page-subtitle">分别选择病例与评价模型、实时语音模型。</p>
+    <header className="provider-page-heading"><h1 className="page-title">连接设置</h1><p>选择新训练使用的模型，管理服务商配置。</p></header>
     {!editing && error && <Notice tone="error">{error}</Notice>}{notice && <Notice tone="success">{notice}</Notice>}
-    <section className="provider-privacy"><IonIcon icon={shieldCheckmarkOutline} /><p>问诊文本与音频会发送至所选 API；科研登记与训练记录保存在本机。请仅使用虚构病例与学员编号。</p></section>
-    <div className="section-heading"><h2>已保存的配置</h2><button className="text-button" onClick={() => edit()}><IonIcon icon={addOutline} />添加配置</button></div>
-    {!settings.profiles.length ? <EmptyState icon={keyOutline} title="先添加一个 API 配置" action={<button className="primary-button full" onClick={() => edit()}>添加配置</button>}>可以先离线登记科研信息、浏览已保存记录；新问诊需要网络与可用配置。</EmptyState> : <div className="provider-list">{settings.profiles.map((profile) => <section className="provider-card" key={profile.id}>
-      <div className="provider-card-heading"><div><strong>{profile.name}</strong><span>{companyLabel(profile.company)}</span></div><Badge tone={credentials[profile.id]?.hasKey ? 'teal' : credentials[profile.id] ? 'amber' : 'neutral'} icon={keyOutline}>{credentials[profile.id]?.hasKey ? 'Key 已保存' : credentials[profile.id] ? '未设置 Key' : 'Key 状态待确认'}</Badge></div>
-      <p className="provider-model">{profile.chatModel || '尚未设置文本模型'}</p><div className="provider-card-bottom"><Badge>{profile.realtimeProtocol === 'none' ? '仅文本' : profile.realtimeProtocol === 'qwen' ? '千问实时协议' : 'OpenAI 实时协议'}</Badge><div><button className="icon-button" aria-label={'编辑 ' + profile.name} onClick={() => edit(profile)}><IonIcon icon={pencilOutline} /></button><button className="icon-button danger-quiet" aria-label={'删除 ' + profile.name} onClick={() => setDeleteTarget(profile)}><IonIcon icon={trashOutline} /></button></div></div>
-    </section>)}</div>}
-    <form onSubmit={(event) => void saveSelection(event)}><section className="panel purpose-panel"><h2>本次使用哪些配置</h2>
-      <div className="field"><label htmlFor="text-provider"><IonIcon icon={flaskOutline} />病例与评价模型</label><select id="text-provider" value={selection.textProfileId || ''} onChange={(event) => { setSelection({ ...selection, textProfileId: event.target.value }); setProbes({}); }}><option value="">请选择文本 API 配置</option>{settings.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name} · {profile.chatModel || '未设模型'}</option>)}</select><p>负责患者病例回答与提交总结后的形成性反馈。</p></div>
-      <div className="field"><label htmlFor="voice-provider"><IonIcon icon={micOutline} />实时语音模型</label><select id="voice-provider" value={selection.voiceProfileId || ''} onChange={(event) => { setSelection({ ...selection, voiceProfileId: event.target.value }); setProbes({}); }}><option value="">仅使用文字问诊</option>{voiceProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name} · {profile.realtimeModel}</option>)}</select><p>仅列出已配置明确实时协议的接口。DeepSeek 等无实时接口的服务只用于文本。</p></div>
-      <button className="primary-button full" type="submit" disabled={Boolean(busy)}>{busy === 'selection' ? <IonSpinner name="crescent" /> : <IonIcon icon={checkmarkCircle} />}保存用途选择</button>
-    </section></form>
-    <section className="panel provider-probes"><h2>分别检测连接</h2><p>检测会向所选 API 发起小请求，可能产生少量 API 用量。配置已保存不等于连接已验证。</p>
+    <div className="provider-tabs" role="group" aria-label="连接设置分区">
+      <button type="button" className={section === 'models' ? 'selected' : ''} aria-pressed={section === 'models'} aria-controls="provider-models-section" onClick={() => setSection('models')}>本次模型</button>
+      <button type="button" className={section === 'providers' ? 'selected' : ''} aria-pressed={section === 'providers'} aria-controls="provider-management-section" onClick={() => setSection('providers')}>服务商管理</button>
+    </div>
+    {section === 'models' && <section id="provider-models-section" aria-label="本次模型">
+      <form onSubmit={(event) => void saveSelection(event)}><section className="panel purpose-panel"><h2>问诊使用的模型</h2>
+        <div className="field"><label htmlFor="text-provider"><IonIcon icon={flaskOutline} />病例与反馈模型</label><select id="text-provider" value={selection.textProfileId || ''} onChange={(event) => { setSelection({ ...selection, textProfileId: event.target.value }); setProbes({}); }}><option value="">请选择文本 API 配置</option>{settings.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name} · {profile.chatModel || '未设模型'}</option>)}</select>
+          {textChoice && <div className="provider-selection-detail"><div><strong>{textChoice.name}</strong>{keyStatus(textChoice)}</div><span>{companyLabel(textChoice.company)} · {textChoice.chatModel || '尚未设置文本模型'}</span></div>}
+        </div>
+        <div className="field"><label htmlFor="voice-provider"><IonIcon icon={micOutline} />实时语音模型</label><select id="voice-provider" value={selection.voiceProfileId || ''} onChange={(event) => { setSelection({ ...selection, voiceProfileId: event.target.value }); setProbes({}); }}><option value="">仅使用文字问诊</option>{voiceProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name} · {profile.realtimeModel}</option>)}</select>
+          {voiceChoice ? <div className="provider-selection-detail"><div><strong>{voiceChoice.name}</strong>{keyStatus(voiceChoice)}</div><span>{companyLabel(voiceChoice.company)} · {voiceChoice.realtimeModel}</span></div> : <p>未选择语音配置时使用文字问诊。</p>}
+          <p>实时配置需有协议、地址与模型；DeepSeek 仅文本。</p>
+        </div>
+        <p className={'provider-selection-note' + (selectionChanged ? ' pending' : '')} role="status">{selectionChanged ? '用途选择尚未保存；保存后用于新训练。' : 'Key 已保存仅表示凭证存在，不代表连接已检测。'}</p>
+        <button className="primary-button full" type="submit" disabled={Boolean(busy)}>{busy === 'selection' ? <IonSpinner name="crescent" /> : <IonIcon icon={checkmarkCircle} />}保存用途选择</button>
+        {!settings.profiles.length && <button type="button" className="text-button full" onClick={() => setSection('providers')}>先添加服务商配置</button>}
+      </section></form>
+    </section>}
+    {section === 'providers' && <section id="provider-management-section" aria-label="服务商管理">
+      <div className="section-heading"><h2>服务商配置</h2><button className="text-button" onClick={() => edit()}><IonIcon icon={addOutline} />添加配置</button></div>
+      <p className="provider-management-note">保存配置后，在“本次模型”选择用途。Key 状态不代表连接结果。</p>
+      {!settings.profiles.length ? <EmptyState icon={keyOutline} title="先添加一个 API 配置" action={<button className="primary-button full" onClick={() => edit()}>添加配置</button>}>新问诊需要可用配置；登记与已存记录可离线使用。</EmptyState> : <div className="provider-list">{settings.profiles.map((profile) => <section className="provider-card" key={profile.id}>
+        <div className="provider-card-heading"><div><strong>{profile.name}</strong><span>{companyLabel(profile.company)}</span></div>{keyStatus(profile)}</div>
+        <p className="provider-model">{profile.chatModel || '尚未设置文本模型'}</p>
+        {(settings.textProfileId === profile.id || settings.voiceProfileId === profile.id) && <p className="provider-current-use">当前用于：{[settings.textProfileId === profile.id ? '病例与反馈' : '', settings.voiceProfileId === profile.id ? '实时语音' : ''].filter(Boolean).join('、')}</p>}
+        <div className="provider-card-bottom"><Badge>{profile.realtimeProtocol === 'none' ? '仅文本' : profile.realtimeProtocol === 'qwen' ? '千问实时协议' : 'OpenAI 实时协议'}</Badge><div><button className="icon-button" aria-label={'编辑 ' + profile.name} onClick={() => edit(profile)}><IonIcon icon={pencilOutline} /></button><button className="icon-button danger-quiet" aria-label={'删除 ' + profile.name} onClick={() => setDeleteTarget(profile)}><IonIcon icon={trashOutline} /></button></div></div>
+      </section>)}</div>}
+    </section>}
+    <details className="provider-disclosure provider-probes"><summary><span>连接检测</span><small>会产生 API 用量</small></summary><div className="provider-disclosure-body">
+      <p>点击检测才会向所选 API 发起请求。保存配置或 Key 不等于连接已验证。</p>
       <div className="settings-actions"><button className="secondary-button" onClick={() => void probe('text')} disabled={Boolean(busy) || !selection.textProfileId || !credentials[selection.textProfileId]?.hasKey}>{busy === 'text' ? <IonSpinner name="crescent" /> : <IonIcon icon={flaskOutline} />}检测文本</button><button className="secondary-button" onClick={() => void probe('voice')} disabled={Boolean(busy) || !selection.voiceProfileId || !credentials[selection.voiceProfileId]?.hasKey}>{busy === 'voice' ? <IonSpinner name="crescent" /> : <IonIcon icon={micOutline} />}检测语音</button></div>
       {(['text', 'voice'] as const).map((capability) => probes[capability] && <Notice key={capability} tone={probes[capability]?.ok ? 'success' : 'error'}><strong>{capability === 'text' ? '文本' : '语音'}：{probes[capability]?.ok ? '检测通过' : '未通过'}</strong><p>{probes[capability]?.message}</p>{probes[capability]?.model && <small>{probes[capability]?.model}</small>}</Notice>)}
-    </section>
-    <p className="small-note">API Key 保存后仅显示是否存在。更换接口域名须重新填写 Key。<br />自定义兼容接口仍需实际协议与模型能力匹配。</p>
+    </div></details>
+    <p className="provider-data-note">问诊发送至所选 API；登记与记录保存在本机。</p>
+    <details className="provider-disclosure provider-data-details"><summary><IonIcon icon={shieldCheckmarkOutline} /><span>数据与密钥说明</span></summary><div className="provider-disclosure-body">
+      <p>仅使用虚构病例与学员编号，勿输入真实身份资料。</p><p>API Key 仅在安卓 App 保存；界面只显示是否存在，不回显已保存内容。更换接口域名须重新填写 Key。</p><p>自定义兼容接口仍需实际协议、模型与音色匹配。</p>
+    </div></details>
     {editing && <Modal title={original ? '编辑 API 配置' : '添加 API 配置'} onClose={closeEditor}><form onSubmit={(event) => void saveProfile(event)}>
       {error && <Notice tone="error">{error}</Notice>}
       <div className="field"><label htmlFor="provider-company">服务商</label><select id="provider-company" value={editing.company} onChange={(event) => { const company = event.target.value as ProviderProfile['company']; changeProfile(preset(company, settings.profiles, editing.id)); }}>{companies.map((company) => <option key={company.id} value={company.id}>{company.label}</option>)}</select></div>

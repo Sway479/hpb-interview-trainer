@@ -1,0 +1,16 @@
+.feedback-settings .feedback-settings-local{color:var(--text-muted,#687780);font-size:12px;white-space:nowrap}
+.feedback-settings .feedback-settings-intro{margin:0 0 16px;color:var(--text-secondary,#50616b);font-size:14px;line-height:1.65}
+.feedback-settings .feedback-settings-selects{display:grid;gap:2px}
+.feedback-settings .feedback-settings-rubric{margin-top:18px;border-top:1px solid var(--border,#dce5e7);padding-top:15px}
+.feedback-settings .feedback-settings-rubric summary{cursor:pointer;font-size:14px;font-weight:650;line-height:1.6}
+.feedback-settings .feedback-settings-rubric summary span{display:block;font-size:12px;font-weight:400;color:var(--text-muted,#687780)}
+.feedback-settings .feedback-settings-rubric-body{padding-top:12px;font-size:13px;line-height:1.75;overflow-wrap:anywhere}
+.feedback-settings .feedback-settings-rubric-body h3{font-size:14px;margin:18px 0 6px}
+.feedback-settings .feedback-settings-rubric-body dl{margin:12px 0}
+.feedback-settings .feedback-settings-rubric-body dl div{display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px;padding:6px 0}
+.feedback-settings .feedback-settings-rubric-body dt{font-weight:650}
+.feedback-settings .feedback-settings-rubric-body dd{margin:0}
+.feedback-settings .feedback-settings-rubric-body ol,.feedback-settings .feedback-settings-rubric-body ul{padding-left:20px}
+.feedback-settings .feedback-settings-rubric-body li{margin-bottom:8px}
+.feedback-settings .feedback-settings-rubric-body li p{margin:4px 0 0;color:var(--text-secondary,#50616b)}
+@media(min-width:640px){.feedback-settings .feedback-settings-selects{grid-template-columns:1fr 1fr;gap:16px}}

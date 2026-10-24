@@ -26,9 +26,10 @@ export function Notice({ children, tone = 'neutral' }: { children: ReactNode; to
 export function EmptyState({ icon = bookOutline, title, children, action }: { icon?: string; title: string; children: ReactNode; action?: ReactNode }) {
   return <div className="empty-state"><span className="empty-icon"><IonIcon icon={icon} aria-hidden="true" /></span><h2>{title}</h2><p>{children}</p>{action}</div>;
 }
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Modal({ title, onClose, children, busy = false }: { title: string; onClose: () => void; children: ReactNode; busy?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(onClose);
+  const busyRef = useRef(busy); busyRef.current = busy;
   closeRef.current = onClose;
   useEffect(() => {
     const dialog = ref.current;
@@ -36,12 +37,12 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     const onBack = (event: Event) => {
       const open = document.querySelectorAll('dialog[open]');
       if (!dialog?.open || event.defaultPrevented || open[open.length - 1] !== dialog) return;
-      event.preventDefault(); closeRef.current();
+      event.preventDefault(); if (!busyRef.current) closeRef.current();
     };
     window.addEventListener('hpb:back', onBack);
     return () => { window.removeEventListener('hpb:back', onBack); dialog?.close(); };
   }, []);
-  return <dialog ref={ref} className="app-dialog" onCancel={onClose}><div className="dialog-heading"><h2>{title}</h2><button className="icon-button" aria-label="关闭" onClick={onClose}><IonIcon icon={closeOutline} /></button></div>{children}</dialog>;
+  return <dialog ref={ref} className="app-dialog" onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}><div className="dialog-heading"><h2>{title}</h2><button className="icon-button" aria-label="关闭" onClick={onClose} disabled={busy}><IonIcon icon={closeOutline} /></button></div>{children}</dialog>;
 }
 export function AudioMeter({ voice }: { voice: VoiceState }) {
   const level = voice.connection === 'ready' ? Math.max(voice.inputLevel, voice.outputLevel) : 0;

@@ -43,3 +43,26 @@ App version is 0.2.1/code3. Model prompts, rubric and engine versions are unchan
 Original private source history and old releases remain preserved. New application,
 test and build changes were synchronized by an explicit file list; publication
 license metadata and private-material exclusions remain in effect.
+
+## v0.3.2-alpha.1 follow-up
+
+Published on 2026-10-24 from private development revision
+`a86f8d6323e40a26f008b79eca9e58ac0555d62e` (App 0.3.2 / code 6).
+Thirty-nine application, core, test and build-helper files were copied through
+an explicit allowlist. Existing implementation files outside that delta remain
+identical to the current private source. Workspace version metadata was updated
+while retaining the public MIT metadata; dependency versions, resolved URLs and
+integrity values did not change. Original private history was not pushed.
+
+This update publishes the already-built debug APK with SHA256
+`5947374add2733ec4d17b158f059df8622528d92dd78f933556c5998ad09e756`.
+Its source and local QA receipt refer to the revision above. The publication
+round does not rerun npm/Gradle or call provider APIs. The 181 offline tests,
+16 package checks and 48 emulator checks are the recorded 2026-10-23 results,
+not new publication-day experiments. See [VERSION_0_3_2](VERSION_0_3_2.md).
+
+Three new screenshots show that version on the dedicated emulator: the training
+queue, record workflow and teacher-review history. They were visually checked
+before publication and contain fictional `SIMULATED_ONLY` labels. Raw research
+exports, model responses, audio, machine paths and signing keys remain excluded.
+The earlier screenshots, source history and releases remain available.

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { documents, clone, type DocumentStorage } from './storage';
 import type { BackupData } from './contracts';
 import type { Session, Study, Participant, LearnerSummary } from '../../../../packages/core/src/types';
+import { SUMMARY_RULES } from '../../../../packages/core/src/summary-rules';
 
 export class LocalError extends Error { constructor(message: string, readonly status = 409) { super(message); } }
 const id = z.string().uuid();
@@ -11,8 +12,8 @@ export const participantSchema = z.object({ id, studyId: id, code: z.string().tr
   trainingYear: z.string().trim().max(50).optional(), rotationMonths: z.number().min(0).max(600).optional(),
   group: z.string().trim().max(100).optional(), consent: z.enum(['not_recorded', 'recorded', 'not_applicable']),
   note: z.string().max(2000).optional(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }).strict();
-export const summarySchema = z.object({ history: z.string().trim().min(10).max(6000), reasoning: z.string().trim().min(2).max(4000),
-  plan: z.string().trim().min(2).max(4000), uncertainty: z.string().trim().min(2).max(4000) }).strict();
+export const summarySchema = z.object({ history: z.string().trim().min(SUMMARY_RULES.history.min).max(SUMMARY_RULES.history.max), reasoning: z.string().trim().min(SUMMARY_RULES.reasoning.min).max(SUMMARY_RULES.reasoning.max),
+  plan: z.string().trim().min(SUMMARY_RULES.plan.min).max(SUMMARY_RULES.plan.max), uncertainty: z.string().trim().min(SUMMARY_RULES.uncertainty.min).max(SUMMARY_RULES.uncertainty.max) }).strict();
 const draftSchema=z.object({history:z.string().max(10000),reasoning:z.string().max(10000),plan:z.string().max(10000),uncertainty:z.string().max(10000)}).strict();
 const turnSchema = z.object({ id: z.string().min(1).max(200), role: z.enum(['learner', 'patient']), text: z.string().max(20000),
   at: z.string().datetime(), source: z.enum(['typed', 'asr', 'model']), final: z.boolean(), interrupted: z.boolean().optional(),
@@ -42,7 +43,7 @@ const researchSchema=z.object({mode:z.enum(['practice','research']),phase:z.enum
 const companySchema=z.enum(['qwen','openai','deepseek','custom']);
 const runtimeTextSchema=z.object({profileId:z.string().min(1).max(100),company:companySchema,endpoint:z.string().max(4096),model:z.string().min(1).max(300)}).strict();
 const runtimeSchema=z.object({appVersion:z.string().max(100),engineVersion:z.string().max(100),patientPromptVersion:z.string().max(100),feedbackPromptVersion:z.string().max(100),
-  assessmentId:z.string().max(200),assessmentVersion:z.string().max(100),text:runtimeTextSchema,
+  assessmentId:z.string().max(200),assessmentVersion:z.string().max(100),feedbackGeneration:z.enum(['automatic','manual']).optional(),text:runtimeTextSchema,
   voice:runtimeTextSchema.extend({protocol:z.enum(['qwen','openai','none']),voice:z.string().max(200)}).optional()}).strict();
 const sessionSchema = z.object({ id, caseId: z.string().min(1).max(100), caseVersion: z.string().min(1).max(60), caseTitle: z.string().max(200),
   createdAt: z.string().datetime(), endedAt: z.string().datetime().optional(),
@@ -82,6 +83,14 @@ export class LocalRepository {
   private writing = Promise.resolve();
   readonly warnings: { path: string; message: string; raw?: string }[] = [];
   constructor(private readonly storage: DocumentStorage = documents) {}
+  private warn(path:string,message:string,raw?:string) {
+    const index=this.warnings.findIndex(value=>value.path===path),previous=index<0?undefined:this.warnings[index];
+    const warning={path,message,...(raw!==undefined?{raw}:previous?.raw!==undefined?{raw:previous.raw}:{})};
+    if(index<0)this.warnings.push(warning);else this.warnings[index]=warning;
+  }
+  private clearWarning(path:string) {
+    for(let index=this.warnings.length-1;index>=0;index--)if(this.warnings[index].path===path)this.warnings.splice(index,1);
+  }
   initialize(): Promise<void> {
     if (!this.initialized) this.initialized = this.load().catch(error => { this.initialized = undefined; throw error; });
     return this.initialized;
@@ -131,7 +140,8 @@ export class LocalRepository {
   }
   async mutate(id: string, update: (value: Session) => void): Promise<Session> {
     return this.exclusive(async()=>{const current=this.sessions.get(id);if(!current)throw new LocalError('会话不存在。',404);
-      const next=clone(current);update(next);await this.storage.write(`sessions/${id}.json`,JSON.stringify(next));this.sessions.set(id,next);return clone(next);});
+      const next=clone(current);update(next);if(next.id!==id)throw new LocalError('会话编号不能更改。');sessionSchema.parse(next);
+      await this.storage.write(`sessions/${id}.json`,JSON.stringify(next));this.sessions.set(id,next);return clone(next);});
   }
   async listStudies():Promise<Study[]>{await this.initialize();return [...this.studies.values()].map(clone).sort((a,b)=>a.code.localeCompare(b.code));}
   async listParticipants(studyId?:string):Promise<Participant[]>{await this.initialize();return [...this.participants.values()].filter(x=>!studyId||x.studyId===studyId).map(clone).sort((a,b)=>a.code.localeCompare(b.code));}
@@ -145,16 +155,22 @@ export class LocalRepository {
     await this.storage.write(`participants/${next.id}.json`,JSON.stringify(next));this.participants.set(next.id,next);return clone(next);});}
   async deleteParticipant(id:string):Promise<void>{return this.exclusive(async()=>{if([...this.sessions.values()].some(s=>s.research?.participantId===id))throw new LocalError('该登记已关联训练记录，不能删除。可保留原记录并在备注中说明更正。');
     await this.storage.remove(`participants/${id}.json`);this.participants.delete(id);});}
-  async getDraft(id:string):Promise<LearnerSummary|null>{await this.get(id);const raw=await this.storage.read(`drafts/${id}.json`);if(!raw)return null;
-    try{return draftSchema.parse(JSON.parse(raw));}catch{throw new LocalError('总结草稿无法读取，原文件保留。');}}
-  async saveDraft(id:string,value:LearnerSummary|null):Promise<void>{await this.get(id);return this.exclusive(async()=>{if(value===null)await this.storage.remove(`drafts/${id}.json`);else await this.storage.write(`drafts/${id}.json`,JSON.stringify(draftSchema.parse(value)));});}
+  async getDraft(id:string):Promise<LearnerSummary|null>{await this.get(id);const path=`drafts/${id}.json`;let raw:string|null=null;
+    try{raw=await this.storage.read(path);if(raw===null){this.clearWarning(path);return null;}const value=draftSchema.parse(JSON.parse(raw));this.clearWarning(path);return value;}
+    catch{this.warn(path,'总结草稿无法读取，原文件保留，请导出恢复资料后核对。',raw===null?undefined:raw);throw new LocalError('总结草稿无法读取，原文件保留。');}}
+  async saveDraft(id:string,value:LearnerSummary|null):Promise<void>{return this.exclusive(async()=>{const current=this.sessions.get(id);if(!current)throw new LocalError('会话不存在。',404);
+    const path=`drafts/${id}.json`;
+    if(value===null)await this.storage.remove(path);
+    else{if(current.summary||!['interview','summary'].includes(current.status))throw new LocalError('独立总结已提交或状态已改变，不能保存过期草稿。');await this.storage.write(path,JSON.stringify(draftSchema.parse(value)));}
+    this.clearWarning(path);
+  });}
   async backup(studyId?:string,sessionId?:string):Promise<BackupData>{await this.initialize();
     const sessions=(await this.list()).filter(s=>(!studyId||s.research?.studyId===studyId)&&(!sessionId||s.id===sessionId));
     const studyIds=new Set(sessions.map(s=>s.research?.studyId).filter(Boolean));if(studyId)studyIds.add(studyId);
     const studies=(await this.listStudies()).filter(s=>!studyId&&!sessionId||studyIds.has(s.id));
     const participantIds=new Set(sessions.map(s=>s.research?.participantId).filter(Boolean));
     const participants=(await this.listParticipants()).filter(p=>sessionId?participantIds.has(p.id):!studyId||p.studyId===studyId);
-    const drafts:Record<string,LearnerSummary>={};for(const session of sessions){const draft=await this.getDraft(session.id);if(draft)drafts[session.id]=draft;}
+    const drafts:Record<string,LearnerSummary>={};for(const session of sessions){try{const draft=await this.getDraft(session.id);if(draft)drafts[session.id]=draft;}catch{/* getDraft preserves the source and records a recovery warning; other records remain exportable. */}}
     return {schemaVersion:'0.2',exportedAt:new Date().toISOString(),simulatedCases:true,studies,participants,sessions,drafts};}
   async importBackup(text:string):Promise<{studies:number;participants:number;sessions:number;drafts:number;skipped:number}>{
     if(text.length>25*1024*1024)throw new LocalError('JSON备份超过25MB，请分项目导入。',400);
@@ -168,6 +184,7 @@ export class LocalRepository {
       const participantById=new Map([...this.participants.entries(),...value.participants.map(p=>[p.id,p] as const)]);
       const incomingIds=new Set<string>();
       const add=(folder:'studies'|'participants'|'sessions',items:any[],map:Map<string,any>)=>{for(const item of items){const key=folder+'/'+item.id;
+        if(folder==='sessions'&&item.research?.mode==='research'&&(!item.research.studyId||!item.research.participantId))throw new LocalError('备份研究训练必须同时关联研究项目和学员。',400);
         if(incomingIds.has(key))throw new LocalError('备份内存在重复ID。',400);incomingIds.add(key);const old=map.get(item.id);
         if(old){if(!equal(old,item))throw new LocalError('同一编号已有不同内容，导入已拒绝，原数据未覆盖：'+item.id);counts.skipped++;continue;}
         if(folder==='studies'&&[...this.studies.values(),...value.studies.filter(s=>s.id!==item.id)].some(s=>s.code.toLocaleLowerCase()===item.code.toLocaleLowerCase()))throw new LocalError('备份项目代码与现有记录冲突。');

@@ -1,0 +1,41 @@
+{
+  "schema": "hpb-public-verification-summary/1",
+  "published_date": "2026-10-24",
+  "qa_record_date": "2026-10-23",
+  "tag": "v0.3.2-alpha.1",
+  "app_version": "0.3.2",
+  "android_version_code": 6,
+  "SIMULATED_ONLY": true,
+  "source_revision": "a86f8d6323e40a26f008b79eca9e58ac0555d62e",
+  "historical_qa": {
+    "offline_tests_passed": 181,
+    "offline_tests_failed": 0,
+    "typecheck_passed": true,
+    "android_build_passed": true,
+    "package_checks_passed": 16,
+    "emulator_android": "14",
+    "emulator_ui_checks_passed": 48,
+    "screenshots_inspected": 11,
+    "original_data_files_byte_identical": 14,
+    "installed_apk_matches_artifact": true
+  },
+  "apk": {
+    "sha256": "5947374add2733ec4d17b158f059df8622528d92dd78f933556c5998ad09e756",
+    "bytes": 5375591,
+    "package_id": "edu.hpb.interview",
+    "debug": true,
+    "certificate_sha256": "07eaeacfdc35e6ed5454c65d9c83e5b8f34789324188cd558ac797e12f92c992"
+  },
+  "publication_round": {
+    "new_build_or_test_run": false,
+    "model_api_calls": 0,
+    "physical_device_test": false
+  },
+  "remaining": [
+    "Physical-phone audio, background, interruption and file-provider acceptance",
+    "Live accounts for non-Qwen providers",
+    "Automatic high-scoring bias and cross-turn semantic omissions",
+    "Independent rater calibration, scoring validity and teaching outcomes",
+    "Authenticated rater identity and tamper-resistant research audit not implemented"
+  ]
+}

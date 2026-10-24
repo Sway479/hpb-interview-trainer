@@ -1,0 +1,23 @@
+.teacher-review-history{color:#263c49;overflow-wrap:anywhere}
+.teacher-review-history>summary,.teacher-review-history .trh-revision>summary{display:flex;align-items:center;justify-content:space-between;min-height:48px;cursor:pointer;list-style:none;line-height:1.65}
+.teacher-review-history summary::-webkit-details-marker{display:none}
+.teacher-review-history summary strong,.teacher-review-history summary small{display:block}
+.teacher-review-history>summary strong{font-size:15px}
+.teacher-review-history summary small{font-size:12px;color:#526875;margin-top:2px;font-weight:400}
+.teacher-review-history summary>ion-icon{flex-shrink:0;margin-left:10px;color:#526875}
+.teacher-review-history[open]>summary>ion-icon,.teacher-review-history .trh-revision[open]>summary>ion-icon{transform:rotate(180deg)}
+.teacher-review-history .trh-scope,.teacher-review-history .trh-empty{font-size:12px;line-height:1.8;color:#526875;margin:8px 0 12px}
+.teacher-review-history .trh-revision{border-top:1px solid #dce6ea;margin-top:10px;padding-top:5px}
+.teacher-review-history .trh-revision>summary{padding:6px 0;font-size:14px}
+.teacher-review-history .trh-revision>summary strong{display:flex;align-items:center;flex-wrap:wrap}
+.teacher-review-history .trh-revision .badge{font-size:11px;margin-left:8px}
+.teacher-review-history .trh-revision-body{padding:3px 0 8px}
+.teacher-review-history .trh-revision-body h3{font-size:12px;color:#526875;margin:10px 0 5px;font-weight:600}
+.teacher-review-history .trh-notes{white-space:pre-wrap;font-size:13px;line-height:1.8;margin:0}
+.teacher-review-history .trh-correction{border:1px solid #dce6ea;border-radius:8px;padding:10px 11px;margin-top:8px;background:#f8fafb}
+.teacher-review-history .trh-correction h4{font-size:13px;line-height:1.7;margin:0 0 5px}
+.teacher-review-history .trh-scores{font-size:12px;line-height:1.8;margin:0;color:#526875}
+.teacher-review-history .trh-scores strong{color:#263c49;font-weight:600}
+.teacher-review-history .trh-reason{font-size:13px;line-height:1.8;white-space:pre-wrap;margin:8px 0 0}
+.teacher-review-history .trh-reason>strong{display:block;font-size:12px;color:#526875;margin-bottom:2px}
+.teacher-review-history summary:focus-visible{outline:2px solid #267d88;outline-offset:3px}

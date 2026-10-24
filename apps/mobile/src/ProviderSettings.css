@@ -1,0 +1,118 @@
+.provider-settings {
+  padding-top: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  min-width: 0;
+}
+.provider-settings .provider-page-heading { margin-bottom: 14px; }
+.provider-settings .provider-page-heading .page-title {
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  margin-bottom: 4px;
+}
+.provider-settings .provider-page-heading p { color: #667680; font-size: 14px; }
+.provider-settings .provider-tabs {
+  display: flex;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: #e9efec;
+}
+.provider-settings .provider-tabs button {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #536875;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.provider-settings .provider-tabs button + button { margin-left: 4px; }
+.provider-settings .provider-tabs .selected { color: #fff; background: #168f85; font-weight: 650; }
+.provider-settings .purpose-panel { padding: 16px; margin-bottom: 14px; }
+.provider-settings .purpose-panel > h2 { font-size: 16px; margin-bottom: 14px; }
+.provider-settings .field { min-width: 0; margin-bottom: 18px; }
+.provider-settings .field > label { font-size: 14px; line-height: 1.5; margin-bottom: 8px; }
+.provider-settings .field > label ion-icon { font-size: 18px; }
+.provider-settings .field input,
+.provider-settings .field select,
+.provider-settings .field textarea {
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.provider-settings .field > p { margin-top: 7px; font-size: 13px; line-height: 1.6; color: #667680; }
+.provider-settings .provider-selection-detail { margin-top: 9px; min-width: 0; }
+.provider-settings .provider-selection-detail > div { display: flex; align-items: flex-start; flex-wrap: wrap; }
+.provider-settings .provider-selection-detail strong {
+  min-width: 0;
+  margin-right: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+.provider-settings .provider-selection-detail > span { display: block; margin-top: 4px; color: #536a78; font-size: 13px; }
+.provider-settings .provider-selection-note { margin: 0 0 12px; color: #667680; font-size: 13px; line-height: 1.6; }
+.provider-settings .provider-selection-note.pending { color: #94612a; }
+.provider-settings .section-heading { margin: 0 0 8px; }
+.provider-settings .section-heading h2 { font-size: 16px; }
+.provider-settings .section-heading .text-button { min-height: 48px; }
+.provider-settings .provider-management-note { margin-bottom: 12px; font-size: 13px; color: #667680; }
+.provider-settings .provider-list { gap: 0; margin-bottom: 14px; }
+.provider-settings .provider-list > * + * { margin-top: 12px; }
+.provider-settings .provider-card { padding: 14px 14px 6px; }
+.provider-settings .provider-card-heading { flex-wrap: wrap; gap: 0; }
+.provider-settings .provider-card-heading > div { flex: 1 1 150px; padding-right: 8px; }
+.provider-settings .provider-card-heading strong { font-size: 15px; line-height: 1.55; }
+.provider-settings .provider-card-heading > div > span { font-size: 13px; color: #667680; }
+.provider-settings .provider-card-heading > .badge { margin-top: 3px; }
+.provider-settings .provider-model { margin-top: 10px; font-size: 14px; color: #536a78; }
+.provider-settings .provider-current-use { margin-top: 5px; font-size: 13px; color: #128279; }
+.provider-settings .provider-card-bottom { gap: 0; flex-wrap: wrap; margin-top: 4px; }
+.provider-settings .provider-card-bottom > .badge { margin-right: 8px; }
+.provider-settings .provider-card-bottom > div { margin-left: auto; }
+.provider-settings .provider-card-bottom .icon-button { width: 48px; min-width: 48px; height: 48px; }
+.provider-settings .badge { white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+.provider-settings .primary-button,
+.provider-settings .secondary-button { min-height: 48px; padding: 12px 14px; font-size: 14px; }
+.provider-settings .provider-disclosure { border: 1px solid #dfe7e3; border-radius: 12px; background: #fff; margin-bottom: 12px; }
+.provider-settings .provider-disclosure > summary {
+  min-height: 48px;
+  padding: 13px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+  color: #294b59;
+}
+.provider-settings .provider-disclosure > summary:focus-visible { outline: 3px solid #168f85; outline-offset: 3px; border-radius: 12px; }
+.provider-settings .provider-disclosure > summary small { display: inline-block; margin-left: 10px; font-size: 12px; font-weight: 500; color: #94612a; }
+.provider-settings .provider-disclosure > summary ion-icon { vertical-align: -3px; font-size: 18px; margin-right: 7px; color: #168f85; }
+.provider-settings .provider-disclosure-body { padding: 0 14px 14px; }
+.provider-settings .provider-disclosure-body > p { font-size: 14px; line-height: 1.65; color: #536a78; }
+.provider-settings .provider-disclosure-body > p + p { margin-top: 8px; }
+.provider-settings .provider-probes .settings-actions { gap: 0; margin: 13px 0; }
+.provider-settings .provider-probes .settings-actions > button + button { margin-left: 10px; }
+.provider-settings .provider-probes .settings-actions > button { min-width: 0; flex: 1; }
+.provider-settings .provider-probes .notice p { font-size: 13px; line-height: 1.6; }
+.provider-settings .provider-data-note { font-size: 13px; line-height: 1.65; color: #667680; margin: 14px 0 9px; }
+.provider-settings .provider-selection-detail strong,
+.provider-settings .provider-selection-detail > span,
+.provider-settings .provider-card strong,
+.provider-settings .provider-card p,
+.provider-settings .provider-disclosure p,
+.provider-settings .notice { overflow-wrap: anywhere; word-break: break-word; }
+.provider-settings .app-dialog { font-size: 14px; }
+.provider-settings .app-dialog .dialog-heading h2 { font-size: 20px; line-height: 1.4; }
+.provider-settings .provider-form-section { margin: 18px 0; padding-top: 16px; }
+.provider-settings .provider-form-section h3 { margin-bottom: 12px; font-size: 15px; color: #497166; }
+.provider-settings .app-dialog .field { margin-bottom: 16px; }
+.provider-settings .app-dialog .password-input input { padding-right: 48px; }

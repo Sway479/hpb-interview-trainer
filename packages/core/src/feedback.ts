@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { AssessmentScore, CaseDefinition, Feedback, NotScoredReason, Session } from './types.ts';
 import { getAssessmentCriteria, getAssessmentMetadata, summarizeAssessmentScores } from './assessment.ts';
+import { createEvidenceResolver, isReliableTurn } from './evidence.ts';
 
 const evidenceSchema = z.object({ turnId: z.string().min(1).max(200), quote: z.string().min(1).max(1000) }).strict();
 const feedbackSchema = z.object({
@@ -57,23 +58,19 @@ export function validateFeedback(raw: string, definition: CaseDefinition, sessio
   if (actualIds.length !== criteria.length || new Set(actualIds).size !== actualIds.length || actualIds.some(id => !expectedIds.has(id)))
     throw new Error('反馈项目缺失、重复或包含陌生ID，请按既定量规重试。');
   const byId = new Map(parsed.items.map(item => [item.criterionId, item]));
-  const turns = new Map(session.turns.map(turn => [turn.id, turn]));
-  const validEvidence = (evidence: { turnId: string; quote: string }) => {
-    const turn = turns.get(evidence.turnId);
-    return Boolean(evidence.quote.trim() && turn?.final && !turn.interrupted
-      && turn.verification !== 'paraphrase_unverified' && turn.text.includes(evidence.quote));
-  };
+  const resolver = createEvidenceResolver(session.turns);
+  const validEvidence = (evidence: { turnId: string; quote: string }) => resolver.resolve(evidence).reliable;
   const items = criteria.map(criterion => {
     const item = byId.get(criterion.id)!;
     if (item.group && item.group !== criterion.group) throw new Error('反馈分组与既定量规不一致，请重试。');
     if (item.sourceIds && JSON.stringify([...item.sourceIds].sort()) !== JSON.stringify([...criterion.sourceIds].sort()))
       throw new Error('反馈来源与既定量规不一致，请重试。');
     const evidence = item.evidence.filter(validEvidence);
-    const learnerEvidence = evidence.filter(entry => turns.get(entry.turnId)?.role === 'learner');
+    const learnerEvidence = evidence.filter(entry => resolver.uniqueTurn(entry.turnId)?.role === 'learner');
     let score: AssessmentScore = item.score;
     let reason: NotScoredReason = item.notScoredReason ?? 'insufficient_evidence';
     const invalidZeroCitation = item.zeroEvidence && (!validEvidence(item.zeroEvidence)
-      || turns.get(item.zeroEvidence.turnId)?.role !== 'learner'
+      || resolver.uniqueTurn(item.zeroEvidence.turnId)?.role !== 'learner'
       || !evidence.some(entry => entry.turnId === item.zeroEvidence!.turnId && entry.quote === item.zeroEvidence!.quote));
     const invalidCitation = evidence.length !== item.evidence.length || Boolean(invalidZeroCitation)
       || (item.score !== 0 && item.zeroEvidence != null);
@@ -85,7 +82,7 @@ export function validateFeedback(raw: string, definition: CaseDefinition, sessio
     }
     if (score === 0) {
       const direct = item.zeroEvidence;
-      const explicitProblem = direct && validEvidence(direct) && turns.get(direct.turnId)?.role === 'learner'
+      const explicitProblem = direct && validEvidence(direct) && resolver.uniqueTurn(direct.turnId)?.role === 'learner'
         && evidence.some(entry => entry.turnId === direct.turnId && entry.quote === direct.quote)
         && !omissionAssertion.test(`${direct.problem} ${item.comment}`);
       if (!explicitProblem) { score = null; reason = 'insufficient_evidence'; }
@@ -110,7 +107,7 @@ export function validateFeedback(raw: string, definition: CaseDefinition, sessio
     };
   });
   const learnerTurns = session.turns.filter(turn => turn.role === 'learner' && turn.text.trim());
-  const confirmed = learnerTurns.filter(turn => turn.final && !turn.interrupted && turn.verification !== 'paraphrase_unverified').length;
+  const confirmed = learnerTurns.filter(turn => !resolver.isDuplicate(turn.id) && isReliableTurn(turn)).length;
   const scored = items.filter(item => item.score !== null).length;
   const overview = `本次记录包含${learnerTurns.length}条学员发言，其中${confirmed}条为完整记录。`
     + `${scored}项具备可追溯原文并形成自动预评分，${items.length - scored}项当前未能评分。`
